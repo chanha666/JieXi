@@ -6,7 +6,7 @@ lifecycleRuntimeKtx = "2.9.2"
 activityCompose = "1.11.0"
 composeBom = "2025.10.01"
 
-room = "2.6.1"
+room = "2.8.4"
 ksp = "2.1.0-1.0.29"
 material = "1.14.0"   # 官方 Material 主库，自带 com.google.android.material.color.utilities 包
 
