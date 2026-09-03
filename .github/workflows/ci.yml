@@ -50,7 +50,7 @@ jobs:
           (Get-FileHash JieXi-Windows-Portable.zip -Algorithm SHA256).Hash.ToLowerInvariant() + "  JieXi-Windows-Portable.zip" | Set-Content SHA256SUMS.txt -Encoding ascii
 
       - name: Upload verified Windows artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: JieXi-Windows-${{ github.sha }}
           path: |
