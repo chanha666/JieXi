@@ -7,7 +7,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$assetNames = @('解析-3.0.2-安装版.exe', '解析-3.0.2-Android.apk')
+$assetNames = @('JieXi-3.0.2-Setup.exe', 'JieXi-3.0.2-Android.apk')
 $assets = foreach ($name in $assetNames) {
     $path = Join-Path $ReleaseDirectory $name
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "缺少发布文件：$path" }

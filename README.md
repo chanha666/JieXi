@@ -6,9 +6,9 @@
 
 请从本仓库的 [Releases](https://github.com/chanha666/JieXi/releases) 页面下载：
 
-- Windows 安装版：`解析-3.0.2-安装版.exe`
-- Windows 绿色版：`解析-3.0.2-绿色版.zip`
-- Android：`解析-3.0.2-Android.apk`
+- Windows 安装版：`JieXi-3.0.2-Setup.exe`
+- Windows 绿色版：`JieXi-3.0.2-Portable.zip`
+- Android：`JieXi-3.0.2-Android.apk`
 - 完整源码：仓库内容或 Release 中的源码包
 
 每个正式版本都附带 `SHA256SUMS.txt`。软件的在线更新清单使用独立 RSA 私钥签名，客户端内置公钥并在安装前再次校验安装包 SHA-256；私钥和 Android 发布密钥不进入仓库。
