@@ -12,6 +12,13 @@ val desktopReleaseProperties = Properties().apply {
     if (config.isFile) config.reader(Charsets.UTF_8).use(::load)
 }
 
+// GitHub's English Windows runners use a legacy ANSI code page that cannot
+// represent the Chinese product name. Keep the release name as "解析" locally,
+// while allowing CI to use the ASCII-safe launcher name "JieXi".
+val windowsPackageName = providers.environmentVariable("JIEXI_PACKAGE_NAME")
+    .orElse("解析")
+    .get()
+
 tasks.processResources {
     filesMatching("update.properties") {
         expand(
@@ -47,7 +54,7 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Exe, TargetFormat.Msi)
-            packageName = "解析"
+            packageName = windowsPackageName
             packageVersion = "3.1.0"
             description = "网盘分享链接解析与高速下载工具"
             vendor = "解析"
@@ -88,7 +95,7 @@ tasks.register<Exec>("packagePortable") {
     commandLine(
         "jpackage",
         "--type", "app-image",
-        "--name", "解析",
+        "--name", windowsPackageName,
         "--dest", outputDir.absolutePath,
         "--input", layout.buildDirectory.dir("portable-input").get().asFile.absolutePath,
         "--main-jar", tasks.jar.get().archiveFileName.get(),
@@ -116,7 +123,7 @@ tasks.register<Exec>("packageInstaller") {
     commandLine(
         "jpackage",
         "--type", "exe",
-        "--name", "解析",
+        "--name", windowsPackageName,
         "--dest", outputDir.absolutePath,
         "--input", layout.buildDirectory.dir("portable-input").get().asFile.absolutePath,
         "--main-jar", tasks.jar.get().archiveFileName.get(),
