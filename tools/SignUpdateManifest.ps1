@@ -7,7 +7,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$assetNames = @('JieXi-3.0.2-Setup.exe', 'JieXi-3.0.2-Android.apk')
+$assetNames = @('JieXi-3.0.2-Setup.exe')
 $assets = foreach ($name in $assetNames) {
     $path = Join-Path $ReleaseDirectory $name
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "缺少发布文件：$path" }
@@ -21,7 +21,7 @@ $assets = foreach ($name in $assetNames) {
 
 $payloadObject = [ordered]@{
     tag_name = "v$Version"
-    body = '解析 3.0.2：Windows 与 Android 双端发布，新增批量队列、预设、历史收藏、平台状态、诊断中心、主题、GitHub 反馈及签名应用内更新。'
+    body = '解析 3.0.2 Windows 完整版：新增批量队列、预设、历史收藏、平台状态、诊断中心、主题、GitHub 反馈及签名应用内更新。'
     published_at = [DateTimeOffset]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
     assets = @($assets)
 }
