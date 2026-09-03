@@ -48,7 +48,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Exe, TargetFormat.Msi)
             packageName = "解析"
-            packageVersion = "3.0.2"
+            packageVersion = "3.1.0"
             description = "网盘分享链接解析与高速下载工具"
             vendor = "解析"
             licenseFile.set(rootProject.file("LICENSE"))
@@ -96,7 +96,7 @@ tasks.register<Exec>("packagePortable") {
         "--runtime-image", layout.buildDirectory.dir("compose/tmp/main/runtime").get().asFile.absolutePath,
         "--icon", project.file("src/main/resources/icon.ico").absolutePath,
         "--vendor", "解析",
-        "--app-version", "3.0.2",
+        "--app-version", "3.1.0",
         "--description", "网盘分享链接解析与高速下载工具"
     )
 }
@@ -124,8 +124,8 @@ tasks.register<Exec>("packageInstaller") {
         "--runtime-image", layout.buildDirectory.dir("compose/tmp/main/runtime").get().asFile.absolutePath,
         "--icon", project.file("src/main/resources/icon.ico").absolutePath,
         "--vendor", "解析",
-        "--app-version", "3.0.2",
-        "--description", "YunX cloud link resolver and downloader",
+        "--app-version", "3.1.0",
+        "--description", "解析 - 网盘分享链接解析与高速下载工具",
         "--license-file", rootProject.file("LICENSE").absolutePath,
         "--win-dir-chooser",
         "--win-per-user-install",

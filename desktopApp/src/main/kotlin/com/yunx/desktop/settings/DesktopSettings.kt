@@ -1,5 +1,7 @@
 package com.yunx.desktop.settings
 
+import com.yunx.app.data.network.NetworkProxyConfig
+import com.yunx.app.data.network.ProxyMode
 import java.io.File
 import java.util.prefs.Preferences
 
@@ -82,6 +84,32 @@ class DesktopSettings(
     var reduceMotion: Boolean
         get() = preferences.getBoolean("reduce_motion", false)
         set(value) { preferences.putBoolean("reduce_motion", value); preferences.flush() }
+
+    var closeToTray: Boolean
+        get() = preferences.getBoolean("close_to_tray", true)
+        set(value) { preferences.putBoolean("close_to_tray", value); preferences.flush() }
+
+    var notifyOnCompletion: Boolean
+        get() = preferences.getBoolean("notify_on_completion", true)
+        set(value) { preferences.putBoolean("notify_on_completion", value); preferences.flush() }
+
+    var preventSleepWhileDownloading: Boolean
+        get() = preferences.getBoolean("prevent_sleep", true)
+        set(value) { preferences.putBoolean("prevent_sleep", value); preferences.flush() }
+
+    var proxyMode: ProxyMode
+        get() = runCatching { ProxyMode.valueOf(preferences.get("proxy_mode", ProxyMode.SYSTEM.name)) }.getOrDefault(ProxyMode.SYSTEM)
+        set(value) { preferences.put("proxy_mode", value.name); preferences.flush() }
+
+    var proxyHost: String
+        get() = preferences.get("proxy_host", "").trim()
+        set(value) { preferences.put("proxy_host", value.trim()); preferences.flush() }
+
+    var proxyPort: Int
+        get() = preferences.getInt("proxy_port", 7890).coerceIn(1, 65535)
+        set(value) { preferences.putInt("proxy_port", value.coerceIn(1, 65535)); preferences.flush() }
+
+    fun networkProxyConfig() = NetworkProxyConfig(proxyMode, proxyHost, proxyPort)
 
     var historyRetentionDays: Int
         get() = preferences.getInt("history_retention_days", 30).coerceIn(0, 365)

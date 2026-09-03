@@ -1,14 +1,9 @@
-# Android 构建输出
+# Windows 桌面构建输出
 /build/
+/.idea/
+/app/
 /.kotlin/
-/app/build/
 /desktopApp/build/
-/captures
-.externalNativeBuild/
-.cxx/
-*.apk
-*.aab
-*.dex
 *.class
 bin/
 gen/
@@ -19,7 +14,6 @@ out/
 gradle-app.setting
 !gradle-wrapper.jar
 local.properties
-debug.keystore
 workspace.json
 tools/wix311-binaries.zip
 tools/wix311/
@@ -27,3 +21,4 @@ desktopApp/browserHelper/bin/
 desktopApp/browserHelper/obj/
 desktopApp/browserHelper/publish/
 desktopApp/browserHelper/publish-net48/
+/debug.keystore

@@ -1,16 +1,16 @@
 # 解析
 
-“解析”是一款面向 Windows 的网盘分享链接解析和下载工具。3.0.2 版提供统一的暖色界面、批量队列、断点续传、预设、历史收藏、平台状态、诊断中心、主题设置、GitHub 反馈与经过签名校验的应用内更新。
+“解析”是一款纯 Windows 网盘分享链接解析和下载工具。3.1.0 版提供暖色界面、批量队列、断点续传、代理、托盘通知、诊断中心、GitHub 反馈与经过签名校验的应用内更新。
 
 ## 下载
 
 请从本仓库的 [Releases](https://github.com/chanha666/JieXi/releases) 页面下载：
 
-- Windows 安装版：`JieXi-3.0.2-Setup.exe`
-- Windows 绿色版：`JieXi-3.0.2-Portable.zip`
+- Windows 安装版：`JieXi-3.1.0-Setup.exe`
+- Windows 绿色版：`JieXi-3.1.0-Portable.zip`
 - 完整源码：仓库内容或 Release 中的源码包
 
-每个正式版本都附带 `SHA256SUMS.txt`。软件的在线更新清单使用独立 RSA 私钥签名，客户端内置公钥并在安装前再次校验安装包 SHA-256；私钥和 Android 发布密钥不进入仓库。
+每个正式版本都附带 `SHA256SUMS.txt`。软件的在线更新清单使用独立 RSA 私钥签名，客户端内置公钥并在安装前再次校验安装包 SHA-256；私钥不进入仓库。
 
 ## 核心功能
 
@@ -20,6 +20,8 @@
 - 单任务最高速预设，并可按网络状况调整并发
 - 历史记录、收藏、下载预设和平台可用状态
 - Windows 诊断日志、敏感字段脱敏和问题反馈入口
+- 一键导出脱敏诊断包、系统/HTTP/SOCKS5 代理
+- 系统托盘、下载通知、单实例保护和下载期间防休眠
 - 浅色、深色、跟随系统及自定义主题
 - Windows 安装版与免安装绿色版
 
@@ -34,10 +36,9 @@
 
 ## 构建
 
-环境要求：JDK 17、Android SDK，以及构建 Windows 安装包所需的 WiX 3。项目包含 Gradle Wrapper。
+环境要求：JDK 17；构建 Windows 安装包另需 WiX 3。项目包含 Gradle Wrapper，不需要 Android SDK。
 
 ```powershell
-.\gradlew.bat :app:testReleaseUnitTest :app:lintRelease :app:assembleRelease
 .\gradlew.bat :desktopApp:test :desktopApp:packagePortable :desktopApp:packageInstaller
 ```
 

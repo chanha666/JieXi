@@ -66,6 +66,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -105,7 +106,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
+import androidx.compose.ui.window.Notification
+import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.rememberTrayState
 import androidx.compose.ui.window.rememberWindowState
 import com.yunx.app.data.network.SharePlatform
 import com.yunx.app.data.network.XunleiDeviceFingerprint
@@ -118,10 +122,13 @@ import com.yunx.desktop.browser.EmbeddedLoginImporter
 import com.yunx.desktop.security.CredentialKey
 import com.yunx.desktop.settings.DesktopPreset
 import com.yunx.desktop.update.DesktopRelease
+import com.yunx.desktop.system.SingleInstanceGuard
+import com.yunx.app.data.network.ProxyMode
 import java.io.File
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
 import javax.swing.JFileChooser
+import javax.swing.JOptionPane
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -176,23 +183,58 @@ private val YunXColors: ColorScheme
         error = Error
     )
 
-fun main() = application {
-    XunleiDeviceFingerprint.init()
-    val state = rememberWindowState(
-        position = WindowPosition(Alignment.Center),
-        size = DpSize(1180.dp, 780.dp)
-    )
-    Window(
-        onCloseRequest = ::exitApplication,
-        title = "解析",
-        icon = remember { loadDesktopIcon() },
-        state = state
-    ) {
-        MaterialTheme(colorScheme = YunXColors, typography = DesktopTypography) {
-            Surface(Modifier.fillMaxSize(), color = Canvas) {
-                YunXDesktopApp(remember { DesktopAppController() })
+fun main() {
+    val instance = SingleInstanceGuard.acquire()
+    if (instance == null) {
+        JOptionPane.showMessageDialog(null, "解析已经在运行，请查看任务栏右下角托盘。", "解析", JOptionPane.INFORMATION_MESSAGE)
+        return
+    }
+    try {
+        application {
+            XunleiDeviceFingerprint.init()
+            val state = rememberWindowState(position = WindowPosition(Alignment.Center), size = DpSize(1180.dp, 780.dp))
+            val icon = remember { loadDesktopIcon() }
+            val controller = remember { DesktopAppController() }
+            val trayState = rememberTrayState()
+            var windowVisible by remember { mutableStateOf(true) }
+            LaunchedEffect(controller) {
+                controller.onTaskNotification = { title, message ->
+                    trayState.sendNotification(Notification(title, message))
+                }
+                kotlinx.coroutines.delay(1500)
+                if (controller.updateConfigured) controller.checkForUpdates()
+            }
+            Tray(
+                state = trayState,
+                icon = icon,
+                tooltip = "解析",
+                menu = {
+                    Item("打开解析", onClick = { windowVisible = true })
+                    Item("打开下载目录", onClick = { controller.openDirectory(controller.settings.downloadDirectory) })
+                    Item("退出", onClick = ::exitApplication)
+                }
+            )
+            Window(
+                visible = windowVisible,
+                onCloseRequest = {
+                    if (controller.settings.closeToTray) {
+                        windowVisible = false
+                        trayState.sendNotification(Notification("解析仍在运行", "下载任务会继续，可从托盘重新打开。"))
+                    } else exitApplication()
+                },
+                title = "解析",
+                icon = icon,
+                state = state
+            ) {
+                MaterialTheme(colorScheme = YunXColors, typography = DesktopTypography) {
+                    Surface(Modifier.fillMaxSize(), color = Canvas) {
+                        YunXDesktopApp(controller)
+                    }
+                }
             }
         }
+    } finally {
+        instance.close()
     }
 }
 
@@ -683,6 +725,10 @@ private fun DownloadsPage(controller: DesktopAppController) {
                                     val detail = if (task.state in setOf(TaskState.FAILED, TaskState.NEEDS_REAUTH, TaskState.NEEDS_INPUT)) task.error.orEmpty() else
                                         "${formatBytes(task.progress.downloaded)} / ${formatBytes(task.progress.total)}   ${formatSpeed(task.progress.bytesPerSecond)}"
                                     Text(detail, color = if (task.state == TaskState.FAILED) Error else Muted, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                                    if (task.retryCount > 0 || task.errorCode.isNotBlank()) {
+                                        Text("${task.errorCode.ifBlank { "自动重试" }} · 已重试 ${task.retryCount} 次", color = Warning, fontSize = 10.sp)
+                                        Spacer(Modifier.width(10.dp))
+                                    }
                                     task.outputFile?.let { file ->
                                         TextButton(onClick = { controller.openFolder(file) }) {
                                             Icon(Icons.Outlined.FolderOpen, null, modifier = Modifier.size(16.dp))
@@ -1079,6 +1125,12 @@ private fun SettingsPage(controller: DesktopAppController) {
     var threads by remember { mutableStateOf(controller.threadCount) }
     var message by remember { mutableStateOf<String?>(null) }
     var githubRepository by remember { mutableStateOf(controller.settings.githubRepositoryUrl) }
+    var closeToTray by remember { mutableStateOf(controller.settings.closeToTray) }
+    var notifications by remember { mutableStateOf(controller.settings.notifyOnCompletion) }
+    var preventSleep by remember { mutableStateOf(controller.settings.preventSleepWhileDownloading) }
+    var proxyMode by remember { mutableStateOf(controller.settings.proxyMode) }
+    var proxyHost by remember { mutableStateOf(controller.settings.proxyHost) }
+    var proxyPort by remember { mutableStateOf(controller.settings.proxyPort.toString()) }
     PageFrame("设置", "显示、支持、诊断与桌面下载") {
       Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())) {
         Card(
@@ -1122,9 +1174,41 @@ private fun SettingsPage(controller: DesktopAppController) {
                     if (controller.settings.reduceMotion) Button(onClick = { controller.setReduceMotion(false) }) { Text("已减少动画") }
                     else OutlinedButton(onClick = { controller.setReduceMotion(true) }) { Text("减少动画") }
                 }
+                Spacer(Modifier.height(18.dp))
+                Text("Windows 桌面集成", fontWeight = FontWeight.Medium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(closeToTray, { closeToTray = it }); Text("关闭窗口后留在托盘")
+                    Spacer(Modifier.width(18.dp))
+                    Checkbox(notifications, { notifications = it }); Text("完成/失败通知")
+                    Spacer(Modifier.width(18.dp))
+                    Checkbox(preventSleep, { preventSleep = it }); Text("下载时阻止休眠")
+                }
+                Spacer(Modifier.height(18.dp))
+                Text("网络代理", fontWeight = FontWeight.Medium)
+                Text("系统代理适合大多数用户；也可指定 HTTP 或 SOCKS5", color = Muted, fontSize = 11.sp)
+                Spacer(Modifier.height(7.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    ProxyMode.entries.forEach { mode ->
+                        val label = when (mode) { ProxyMode.SYSTEM -> "跟随系统"; ProxyMode.DIRECT -> "不使用"; ProxyMode.HTTP -> "HTTP"; ProxyMode.SOCKS -> "SOCKS5" }
+                        if (proxyMode == mode) Button(onClick = { proxyMode = mode }) { Text(label) }
+                        else OutlinedButton(onClick = { proxyMode = mode }) { Text(label) }
+                    }
+                }
+                if (proxyMode == ProxyMode.HTTP || proxyMode == ProxyMode.SOCKS) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(proxyHost, { proxyHost = it }, Modifier.weight(1f), label = { Text("代理服务器") }, singleLine = true)
+                        OutlinedTextField(proxyPort, { proxyPort = it.filter(Char::isDigit).take(5) }, Modifier.width(150.dp), label = { Text("端口") }, singleLine = true)
+                    }
+                }
                 Spacer(Modifier.height(22.dp))
                 Button(onClick = {
-                    message = runCatching { controller.saveSettings(directory, threads); "设置已保存" }
+                    message = runCatching {
+                        controller.saveSettings(directory, threads)
+                        controller.saveDesktopIntegration(closeToTray, notifications, preventSleep)
+                        controller.saveProxy(proxyMode, proxyHost, proxyPort.toIntOrNull() ?: 7890)
+                        "设置已保存"
+                    }
                         .getOrElse { it.message ?: "保存失败" }
                 }) { Text("保存设置") }
                 message?.let { Text(it, color = if (it == "设置已保存") Accent else Error, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp)) }
@@ -1150,6 +1234,14 @@ private fun SettingsPage(controller: DesktopAppController) {
                 SettingsActionRow(Icons.Outlined.Article, "诊断日志", "打开本机日志文件夹，反馈故障时可一并发送") {
                     runCatching(controller::openDiagnosticLogs)
                         .onFailure { message = it.message ?: "无法打开日志目录" }
+                }
+                HorizontalDivider(color = Line)
+                SettingsActionRow(Icons.Outlined.Save, "导出脱敏诊断包", "生成不包含 Cookie、Token 和完整链接的 ZIP") {
+                    message = runCatching {
+                        val file = controller.exportDiagnosticBundle()
+                        controller.openDirectory(file.parentFile)
+                        "诊断包已导出：${file.name}"
+                    }.getOrElse { it.message ?: "诊断包导出失败" }
                 }
             }
         }

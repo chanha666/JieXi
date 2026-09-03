@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.yunx.app.data.network.SharePlatform
+import com.yunx.app.data.network.HttpClients
+import com.yunx.app.data.network.ProxyMode
 import com.yunx.app.data.network.model.ShareFile
 import com.yunx.desktop.browser.ChromiumCookieImporter
 import com.yunx.desktop.download.DesktopDownloader
@@ -16,6 +18,8 @@ import com.yunx.desktop.settings.DesktopPreset
 import com.yunx.desktop.update.DesktopRelease
 import com.yunx.desktop.update.DesktopUpdateService
 import com.yunx.desktop.util.DesktopLog
+import com.yunx.desktop.system.DiagnosticBundleExporter
+import com.yunx.desktop.system.WindowsPowerGuard
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -89,6 +93,7 @@ class DesktopAppController(
     private val stateStore: DesktopStateStore = DesktopStateStore()
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val configuredNetwork = HttpClients.configure(settings.networkProxyConfig())
     private val resolver = DesktopResolver(credentialStore)
     private val downloader = DesktopDownloader()
     private val updater = DesktopUpdateService()
@@ -117,6 +122,7 @@ class DesktopAppController(
     var updateDownloading by mutableStateOf(false)
     var downloadedUpdate by mutableStateOf<File?>(null)
     val updateConfigured: Boolean get() = updater.configured
+    var onTaskNotification: ((String, String) -> Unit)? = null
 
     init {
         DesktopLog.d("App", "解析桌面版启动")
@@ -191,6 +197,7 @@ class DesktopAppController(
     private fun launchTask(task: DesktopDownloadTask) {
         if (downloadJobs.containsKey(task.id)) return
         task.state = TaskState.PREPARING; task.updatedAt = System.currentTimeMillis(); persist()
+        updatePowerGuard()
         val job = scope.launch {
             var context: ResolvedShare? = null
             var direct: com.yunx.app.data.network.model.DownloadLink? = null
@@ -204,7 +211,11 @@ class DesktopAppController(
                     task.downloadKey, settings.speedLimitBytes) { progress ->
                     javax.swing.SwingUtilities.invokeLater { task.progress = progress; task.updatedAt = System.currentTimeMillis(); persistThrottled() }
                 }
-                withContext(Dispatchers.Swing) { task.outputFile = output; task.state = TaskState.COMPLETED; task.progress = DownloadProgress(output.length(), output.length(), 0, "下载完成"); persist() }
+                withContext(Dispatchers.Swing) {
+                    task.outputFile = output; task.state = TaskState.COMPLETED
+                    task.progress = DownloadProgress(output.length(), output.length(), 0, "下载完成"); persist()
+                    if (settings.notifyOnCompletion) onTaskNotification?.invoke("下载完成", task.fileName)
+                }
             } catch (_: CancellationException) {
                 // pause/remove already persisted the final user-selected state
             } catch (error: Throwable) {
@@ -218,6 +229,9 @@ class DesktopAppController(
                         task.state = if (failure.first == "AUTH_EXPIRED") TaskState.NEEDS_REAUTH else if (failure.first == "PASSCODE_REQUIRED") TaskState.NEEDS_INPUT else TaskState.FAILED
                     }
                     persist()
+                    if (task.state in setOf(TaskState.FAILED, TaskState.NEEDS_REAUTH, TaskState.NEEDS_INPUT) && settings.notifyOnCompletion) {
+                        onTaskNotification?.invoke("下载未完成", "${task.fileName}：${task.error.orEmpty()}")
+                    }
                 }
                 if (task.state == TaskState.RETRY_WAIT) {
                     delay((1_000L shl task.retryCount.coerceIn(0, 5)).coerceAtMost(30_000L))
@@ -226,7 +240,7 @@ class DesktopAppController(
             } finally {
                 direct?.let { link -> context?.let { runCatching { resolver.cleanup(it, link) } } }
                 taskContexts.remove(task.id); downloadJobs.remove(task.id)
-                withContext(Dispatchers.Swing) { schedule() }
+                withContext(Dispatchers.Swing) { updatePowerGuard(); schedule() }
             }
         }
         downloadJobs[task.id] = job
@@ -327,6 +341,10 @@ class DesktopAppController(
         if (Desktop.isDesktopSupported()) Desktop.getDesktop().open(DesktopLog.directory)
     }
 
+    fun exportDiagnosticBundle(): File = DiagnosticBundleExporter.export(
+        File(settings.downloadDirectory, "诊断"), APP_VERSION, downloads.toList()
+    )
+
     fun saveSettings(directory: String, threads: Int) {
         val dir = File(directory).absoluteFile; dir.mkdirs(); require(dir.isDirectory && dir.canWrite()) { "下载目录不可写" }
         downloadDirectory = dir.absolutePath; threadCount = threads.coerceIn(1, 64); settings.downloadDirectory = dir; settings.threadCount = threadCount
@@ -337,14 +355,31 @@ class DesktopAppController(
         schedule()
     }
     fun setReduceMotion(enabled: Boolean) { settings.reduceMotion = enabled }
+    fun saveDesktopIntegration(closeToTray: Boolean, notifications: Boolean, preventSleep: Boolean) {
+        settings.closeToTray = closeToTray
+        settings.notifyOnCompletion = notifications
+        settings.preventSleepWhileDownloading = preventSleep
+        updatePowerGuard()
+    }
+    fun saveProxy(mode: ProxyMode, host: String, port: Int) {
+        val config = com.yunx.app.data.network.NetworkProxyConfig(mode, host.trim(), port)
+        settings.proxyMode = mode
+        settings.proxyHost = host
+        settings.proxyPort = port
+        HttpClients.configure(config)
+    }
     fun openFile(file: File) { if (Desktop.isDesktopSupported()) Desktop.getDesktop().open(file) }
     fun openFolder(file: File) { if (Desktop.isDesktopSupported()) Desktop.getDesktop().open(file.parentFile ?: file) }
+    fun openDirectory(directory: File) { directory.mkdirs(); if (Desktop.isDesktopSupported()) Desktop.getDesktop().open(directory) }
     fun openUrl(url: String) { if (Desktop.isDesktopSupported()) Desktop.getDesktop().browse(URI(url)) }
 
     private var lastPersist = 0L
     private fun persistThrottled() { val now = System.currentTimeMillis(); if (now - lastPersist > 1000) { lastPersist = now; persist() } }
     private fun persist() = stateStore.save(DesktopStateStore.State(downloads.map { it.persisted() }, history.toList(), favorites.toList()))
     private fun trimHistory() { val max = 500; while (history.size > max) history.removeLast() }
+    private fun updatePowerGuard() = WindowsPowerGuard.setDownloading(
+        settings.preventSleepWhileDownloading && downloadJobs.isNotEmpty()
+    )
     private fun publicLink(value: String): String = Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE).find(value)?.value?.substringBefore('?') ?: value.substringBefore('?').trim()
     private fun friendlyError(error: Throwable): String = generateSequence(error) { it.cause }.mapNotNull(Throwable::message).firstOrNull(String::isNotBlank) ?: error.javaClass.simpleName
 
@@ -358,7 +393,7 @@ class DesktopAppController(
     )
     private fun account(key: CredentialKey) = if (credentialStore.has(key)) "待验证" else "未配置"
 
-    companion object { const val APP_VERSION = "3.0.2" }
+    companion object { const val APP_VERSION = "3.1.0" }
 }
 
 private object DesktopFailureClassifier {
