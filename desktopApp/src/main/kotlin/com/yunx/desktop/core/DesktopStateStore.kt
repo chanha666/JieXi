@@ -35,10 +35,7 @@ data class DesktopHistory(val id: String, val link: String, val title: String, v
 data class DesktopFavorite(val id: String, val link: String, val title: String, val platform: String, val createdAt: Long)
 
 class DesktopStateStore(
-    private val file: File = File(
-        System.getenv("LOCALAPPDATA") ?: File(System.getProperty("user.home"), "AppData/Local").absolutePath,
-        "解析/state-v3.bin"
-    )
+    private val file: File = DesktopDataPaths.stateFile()
 ) {
     data class State(
         val tasks: List<PersistedTask> = emptyList(),

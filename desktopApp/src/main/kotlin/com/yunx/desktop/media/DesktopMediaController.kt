@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import com.jiexi.core.link.LinkKind
 import com.jiexi.core.link.UnifiedLinkClassifier
 import com.sun.jna.platform.win32.Crypt32Util
+import com.yunx.desktop.core.DesktopDataPaths
 import com.yunx.desktop.settings.DesktopSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -30,10 +31,7 @@ import kotlin.math.roundToInt
 class DesktopMediaController(
     private val settings: DesktopSettings,
     val engine: DesktopMediaEngine = DesktopMediaEngine(),
-    private val storeFile: File = File(
-        System.getenv("LOCALAPPDATA") ?: File(System.getProperty("user.home"), "AppData/Local").absolutePath,
-        "解析/media-tasks-v1.json"
-    )
+    private val storeFile: File = DesktopDataPaths.mediaTasksFile()
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val processing = AtomicBoolean(false)

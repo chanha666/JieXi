@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: windows-ci-${{ github.ref }}
+  group: jiexi-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -36,8 +36,17 @@ jobs:
           java-version: "17"
           cache: gradle
 
+      - name: Set up .NET 8 for installer migration helper
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.x"
+
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v6
+
+      - name: Verify fail-closed Windows installer data migration
+        shell: pwsh
+        run: .\gradlew.bat --no-daemon :desktopApp:verifyInstallerDataPreservation
 
       - name: Run Windows desktop tests
         shell: pwsh

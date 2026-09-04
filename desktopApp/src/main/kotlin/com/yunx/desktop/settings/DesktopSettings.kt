@@ -132,7 +132,7 @@ class DesktopSettings(
     }
 
     companion object {
-        private const val DEFAULT_FEEDBACK_REPO = "https://github.com/chanha666/JieXi"
+        private const val DEFAULT_FEEDBACK_REPO = DesktopSupportLinks.GITHUB_REPOSITORY
         fun normalizeGitHubRepository(value: String): String {
             val trimmed = value.trim().removeSuffix("/").removeSuffix(".git")
             if (trimmed.isBlank()) return ""

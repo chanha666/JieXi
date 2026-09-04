@@ -103,7 +103,10 @@ val windowsDistributionRoot = file(
 )
 val portableOutputDir = windowsDistributionRoot.resolve("portable")
 val installerOutputDir = windowsDistributionRoot.resolve("installer")
+val installerTempDir = windowsDistributionRoot.resolve("installer-temp")
 val portableAppImageDir = portableOutputDir.resolve(windowsPackageName)
+val installerResourceTemplate = project.file("packaging/windows/main.wxs.template")
+val installerResourceDir = layout.buildDirectory.dir("generated/installer-resources").get().asFile
 val mediaEngineManifestFile = layout.buildDirectory.file("generated/media-engine/MANIFEST.sha256")
 
 tasks.processResources {
@@ -226,6 +229,88 @@ val publishBrowserHelper by tasks.registering(Exec::class) {
     )
 }
 
+val installerHelperProject = project.file("installerHelper/JieXiPreserveData.csproj")
+val installerHelperTestProject = project.file("installerHelper.Tests/JieXiPreserveData.Tests.csproj")
+val installerHelperSource = project.file("installerHelper/Program.cs")
+val installerHelperTestSource = project.file("installerHelper.Tests/Program.cs")
+val installerHelperOutputDir = project.file("installerHelper/publish-win-x64")
+val installerHelperExecutable = installerHelperOutputDir.resolve("JieXiPreserveData.exe")
+val installerHelperTestRoot = providers.environmentVariable("JIEXI_INSTALLER_HELPER_TEST_ROOT")
+    .orElse(
+        if (file("D:/CodexCache/JieXi").isDirectory) {
+            "D:/CodexCache/JieXi/installer-helper-tests"
+        } else {
+            layout.buildDirectory.dir("installer-helper-tests").get().asFile.absolutePath
+        }
+    )
+    .get()
+
+val testInstallerMigrationHelper by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Exercise the exact, no-overwrite, fail-closed Windows upgrade data migration helper."
+    inputs.files(installerHelperProject, installerHelperTestProject, installerHelperSource, installerHelperTestSource)
+    outputs.upToDateWhen { false }
+    doFirst { file(installerHelperTestRoot).mkdirs() }
+    commandLine(
+        dotnetExecutable,
+        "run",
+        "--project", installerHelperTestProject.absolutePath,
+        "--configuration", "Release",
+        "--framework", "net8.0-windows",
+        "--",
+        installerHelperTestRoot
+    )
+}
+
+val publishInstallerMigrationHelper by tasks.registering(Exec::class) {
+    dependsOn(testInstallerMigrationHelper)
+    group = "distribution"
+    description = "Rebuild the audited Windows upgrade migration helper from source."
+    inputs.files(installerHelperProject, installerHelperSource)
+    inputs.property("dotnetExecutable", dotnetExecutable)
+    outputs.file(installerHelperExecutable)
+    outputs.upToDateWhen { false }
+    doFirst {
+        project.delete(installerHelperOutputDir)
+        installerHelperOutputDir.mkdirs()
+    }
+    commandLine(
+        dotnetExecutable,
+        "publish", installerHelperProject.absolutePath,
+        "--configuration", "Release",
+        "--framework", "net8.0-windows",
+        "--runtime", "win-x64",
+        "--self-contained", "true",
+        "--output", installerHelperOutputDir.absolutePath
+    )
+}
+
+val generatedInstallerMainWxs = installerResourceDir.resolve("main.wxs")
+val generateInstallerResources by tasks.registering {
+    dependsOn(publishInstallerMigrationHelper)
+    group = "distribution"
+    description = "Generate the WiX template with the freshly built embedded migration helper."
+    inputs.file(installerResourceTemplate)
+    inputs.file(installerHelperExecutable)
+    outputs.file(generatedInstallerMainWxs)
+    doLast {
+        val escapedHelperPath = installerHelperExecutable.absolutePath
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+        val template = installerResourceTemplate.readText(Charsets.UTF_8)
+        check(template.split("@PRESERVE_HELPER_PATH@").size == 2) {
+            "Windows 安装模板必须且只能包含一个迁移助手路径占位符。"
+        }
+        installerResourceDir.mkdirs()
+        generatedInstallerMainWxs.writeText(
+            template.replace("@PRESERVE_HELPER_PATH@", escapedHelperPath),
+            Charsets.UTF_8
+        )
+    }
+}
+
 // WiX is only required for an installer. This task creates a self-contained
 // portable Windows application with the JDK jpackage tool, so a transient WiX
 // download failure never blocks distribution.
@@ -317,19 +402,90 @@ tasks.register("verifyPortablePackage") {
     }
 }
 
+val verifyInstallerDataPreservation by tasks.registering {
+    dependsOn(generateInstallerResources, testInstallerMigrationHelper)
+    group = "verification"
+    description = "Verify that the Windows upgrade atomically preserves only the exact legacy task-state files."
+    inputs.file(generatedInstallerMainWxs)
+    inputs.file(installerHelperSource)
+    doLast {
+        val template = generatedInstallerMainWxs.readText(Charsets.UTF_8)
+        val helper = installerHelperSource.readText(Charsets.UTF_8)
+        val requiredTemplateTokens = listOf(
+            "JieXiMigrateBin",
+            "JieXiPreserveLegacyData",
+            "JIEXI_UNSUPPORTED_LEGACY_FOUND",
+            "JieXiBlockUnsupportedLegacy",
+            "Minimum=\"3.1.0\"",
+            "IncludeMinimum=\"yes\"",
+            "[LocalAppDataFolder]",
+            "BinaryKey=\"JieXiMigrateBin\"",
+            "After=\"InstallInitialize\"",
+            "<RemoveExistingProducts After=\"JieXiPreserveLegacyData\"/>"
+        )
+        requiredTemplateTokens.forEach { token ->
+            check(template.contains(token)) { "Windows 升级数据保护模板缺少：$token" }
+        }
+        val expectedLegacyBlockMessage =
+            "检测到解析 3.0.x。为避免任务、历史和收藏数据损坏，本安装包不会覆盖旧版。请先备份旧版数据，在 Windows 设置中卸载旧版，再全新安装 $windowsPackageVersion。当前旧版和数据均未被修改。"
+        check(template.contains("Error=\"$expectedLegacyBlockMessage\"")) {
+            "Windows 3.0.x 阻止提示必须明确要求先备份、卸载，再全新安装。"
+        }
+        check(!template.contains("@PRESERVE_HELPER_PATH@")) { "Windows 迁移助手路径未生成。" }
+        check(listOf("cmd.exe", "powershell", "copy /", "\\解析\\*").none(template::contains)) {
+            "Windows 升级不得使用脚本或通配复制旧安装目录。"
+        }
+        val requiredHelperTokens = listOf(
+            "\"state-v3.bin\"",
+            "\"state-v3.bin.bak\"",
+            "\"media-tasks-v1.json\"",
+            "FileMode.CreateNew",
+            "destinationStream.Flush(true)",
+            "SHA256.Create()",
+            "Directory.Move(staging, target)",
+            "SnapshotLegacyFiles(legacy)",
+            "catch (FileNotFoundException)",
+            "InstallerPathValidation.ValidateLocalApplicationData(args[0])",
+            "SHGetKnownFolderPath",
+            "AcquireLegacyApplicationLock(legacy)",
+            "stream.Lock(0, long.MaxValue)",
+            "Process.GetProcessesByName(\"解析\")",
+            "if (!FilesMatch(source, destination))"
+        )
+        requiredHelperTokens.forEach { token ->
+            check(helper.contains(token)) { "Windows 迁移助手缺少：$token" }
+        }
+        check(!helper.contains("File.Delete(source)")) { "Windows 迁移助手不得删除旧数据源。" }
+        val preserve = template.indexOf("<Custom Action=\"JieXiPreserveLegacyData\"")
+        val removeExisting = template.indexOf("<RemoveExistingProducts")
+        check(preserve >= 0 && removeExisting > preserve) {
+            "Windows 升级必须在删除旧版本之前保留任务数据。"
+        }
+    }
+}
+
 tasks.register<Exec>("packageInstaller") {
-    dependsOn("verifyPortablePackage")
+    dependsOn("verifyPortablePackage", verifyInstallerDataPreservation)
     group = "distribution"
     description = "Wrap the already verified Windows 4.0.0 app image in an EXE installer."
     inputs.dir(portableAppImageDir)
     inputs.file(rootProject.file("LICENSE"))
     inputs.file(project.file("src/main/resources/icon.ico"))
+    inputs.file(installerHelperExecutable)
+    inputs.dir(installerResourceDir)
     inputs.property("packageName", windowsPackageName)
     inputs.property("packageVersion", windowsPackageVersion)
     outputs.dir(installerOutputDir)
     doFirst {
+        val distributionRootPath = windowsDistributionRoot.canonicalFile.toPath()
+        val installerTempPath = installerTempDir.canonicalFile.toPath()
+        check(installerTempPath != distributionRootPath && installerTempPath.startsWith(distributionRootPath)) {
+            "Windows 安装器临时目录必须严格位于发行输出目录内。"
+        }
         project.delete(installerOutputDir)
+        project.delete(installerTempDir)
         installerOutputDir.mkdirs()
+        installerTempDir.mkdirs()
         val bundledWix = rootProject.file("tools/wix311")
         val configuredWix = System.getenv("WIX_PATH")?.let(::file)
         val wixDir = configuredWix?.takeIf { it.isDirectory }
@@ -348,6 +504,8 @@ tasks.register<Exec>("packageInstaller") {
         "--app-version", windowsPackageVersion,
         "--description", "解析 - 网盘与公开视频解析、高速下载及媒体工具",
         "--license-file", rootProject.file("LICENSE").absolutePath,
+        "--resource-dir", installerResourceDir.absolutePath,
+        "--temp", installerTempDir.absolutePath,
         "--win-dir-chooser",
         "--win-per-user-install",
         "--win-menu",

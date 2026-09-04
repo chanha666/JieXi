@@ -15,6 +15,7 @@ import com.yunx.desktop.security.CredentialStore
 import com.yunx.desktop.security.CredentialKey
 import com.yunx.desktop.settings.DesktopSettings
 import com.yunx.desktop.settings.DesktopPreset
+import com.yunx.desktop.settings.DesktopSupportLinks
 import com.yunx.desktop.update.DesktopRelease
 import com.yunx.desktop.update.DesktopUpdateService
 import com.yunx.desktop.util.DesktopLog
@@ -401,6 +402,17 @@ class DesktopAppController(
     fun openGitHubFeedback(): Boolean {
         val url = settings.githubIssuesUrl() ?: updater.defaultFeedbackUrl ?: return false
         openUrl(url)
+        return true
+    }
+    fun openSupportEmail(): Boolean {
+        if (!Desktop.isDesktopSupported()) return false
+        val desktop = Desktop.getDesktop()
+        val uri = DesktopSupportLinks.feedbackEmailUri()
+        when {
+            desktop.isSupported(Desktop.Action.MAIL) -> desktop.mail(uri)
+            desktop.isSupported(Desktop.Action.BROWSE) -> desktop.browse(uri)
+            else -> return false
+        }
         return true
     }
     fun openDiagnosticLogs() {

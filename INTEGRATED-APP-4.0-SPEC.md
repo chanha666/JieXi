@@ -88,6 +88,9 @@ WAITING -> PREPARING -> RUNNING -> VERIFYING -> COMPLETED
 - 下载后使用 ffprobe 校验是否存在有效音视频轨道。
 - 工具页支持音频提取、截图、封面、元数据和图片局部修复。
 - 下载大文件默认落到 `D:\解析下载`；D 盘不可写时明确要求选择，不静默塞满 C 盘。
+- 运行状态与安装目录分离，统一写入 `%LOCALAPPDATA%\JieXi\Data`，正常卸载不得把该目录作为程序文件删除。
+- Windows 只支持从 3.1.0 及以上版本直接升级。安装器必须在移除旧版前，仅把 `%LOCALAPPDATA%\解析` 中的 `state-v3.bin`、`state-v3.bin.bak`、`media-tasks-v1.json` 迁移到新数据目录；禁止通配复制，禁止覆盖目标，遇到占用、冲突、校验失败、重解析点或异常路径时必须失败关闭并保留旧版与源数据。
+- 3.0.x 及更早版本必须由安装器明确阻止直接升级，并提示用户“备份旧数据 → 卸载旧版 → 全新安装 4.0.0”。
 
 ## 5. Android 功能
 
@@ -141,7 +144,7 @@ WAITING -> PREPARING -> RUNNING -> VERIFYING -> COMPLETED
 ## 8. 安全、许可与防冒名
 
 - 本项目继续遵守上游 GNU AGPL-3.0；开源软件无法从技术上绝对阻止别人修改名称。
-- 官方发行包通过 Windows/Android 代码签名、软件内“官方版本校验”、GitHub 发布哈希和固定更新公钥识别。
+- 官方发行包通过 Android APK 发行签名、软件内“官方版本校验”、GitHub 发布哈希和固定更新公钥识别。Windows 安装包当前没有 Authenticode 签名，必须明确显示为未签名，不能用 RSA 更新清单签名冒充 Windows 代码签名。
 - 关于页保留上游归属、作者仓库、版本签名指纹和许可证。
 - 不把“禁止改名”伪装成无法绕过的技术保护；真正有效的是签名信任链、官方发布渠道和商标/许可证声明。
 - 媒体引擎及插件随包附带各自许可证与来源版本，生成 SBOM 和第三方许可清单。
@@ -150,20 +153,22 @@ WAITING -> PREPARING -> RUNNING -> VERIFYING -> COMPLETED
 
 ### 自动化
 
-- Windows 与 Android 所有现有单元测试通过。
+- Windows 81 项测试通过（其中 1 项因缺少真实在线网盘凭据跳过）、Android 78 项、共享核心 6 项和 Windows 安装迁移助手 12 项全部通过。
 - 新增分类器、任务恢复、删除语义、文件名安全、进度解析、日志脱敏和更新验签测试。
+- CI 必须执行 Windows 安装迁移助手验证；CodeQL 必须分别运行 Java/Kotlin 与 C# 独立分析 job。
 - Android Lint、Release APK、Windows 绿色版和安装版构建通过。
 
 ### 实际运行
 
 - Windows 实际启动并逐页检查；1366×768、125%/150% 缩放不截断。
+- Windows 最终 Setup 必须验证全新安装、3.1.0+ 三文件白名单迁移、目标冲突中止、3.0.x 安全阻止、卸载后数据保留与重装。
 - Android 真机或模拟器完成冷启动、旋转、后台、强制结束、恢复和通知栏操作。
 - 至少各验证一个公开网盘样本、公开视频样本、直链、失败链接和本地工具样本。
 - 抖音/X 必须实际完成“解析 → 下载 → MediaStore 可播放”，不能只验证解析结果。
 
 ### 发布
 
-- 生成 Windows 安装版、绿色版、Android Release APK、源码包和 `SHA256SUMS.txt`。
+- GitHub `v4.0.0` Release 必须且只按发布清单提供五个正式附件：Windows 安装版、Windows 绿色版、Android Release APK、`SHA256SUMS.txt`、`BUILD-INFO.txt`。
 - 更新清单签名及包哈希核验通过。
 - 记录所有未具备真实账号/样本的项目，并将对应平台标成“实验”，不得声称完整通过。
 

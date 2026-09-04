@@ -9,6 +9,13 @@
 
 安装包目前没有商业 Authenticode 证书，Windows 可能显示 SmartScreen 提示；请只从 `chanha666/JieXi` 的 Release 下载，并与 `SHA256SUMS.txt` 核对。
 
+### 从旧版升级
+
+- **3.1.0 及以上版本**：可以直接运行 4.0.0 安装包升级。安装器会在移除旧版之前，只把 `%LOCALAPPDATA%\解析` 中的 `state-v3.bin`、`state-v3.bin.bak`、`media-tasks-v1.json` 迁移到 `%LOCALAPPDATA%\JieXi\Data`；不会复制其他文件，也不会覆盖已经存在的新数据。遇到占用、冲突、校验失败或异常路径时，升级会停止并保留旧版与旧数据。
+- **3.0.x 及更早版本**：安装器会安全阻止直接升级。请先备份 `%LOCALAPPDATA%\解析` 和重要下载记录，在 Windows“设置 → 应用 → 已安装的应用”中卸载旧版，再安装 4.0.0。不要删除备份，确认新版任务与下载文件正常后再自行整理。
+
+4.0.0 的运行数据与程序安装目录分离，默认保存在 `%LOCALAPPDATA%\JieXi\Data`；正常卸载程序不会把这份用户数据当作程序文件删除。
+
 ## 绿色版
 
 1. 下载并完整解压 `JieXi-4.0.0-Windows-Portable.zip`。
@@ -36,3 +43,5 @@
 ## 内置组件
 
 发布包自带 Java 运行环境、yt-dlp、FFmpeg、ffprobe、Deno 和视频号提取插件，目标电脑不需要另装开发工具。程序启动时会检查组件是否齐全，打包流程会复核 `MANIFEST.sha256`。
+
+正式 Release 固定提供五个附件：Windows 安装版、Windows 绿色版、Android APK、`SHA256SUMS.txt` 和 `BUILD-INFO.txt`。Windows 安装版当前未做 Authenticode 签名；Android APK 使用作者固定的 RSA 4096 位发行证书签名，两者不能混为一谈。

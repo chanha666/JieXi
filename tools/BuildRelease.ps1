@@ -53,6 +53,8 @@ try {
         :desktopApp:test `
         :desktopApp:packageInstaller
     if ($LASTEXITCODE -ne 0) { throw '自动测试或正式打包失败。' }
+    & (Join-Path $PSScriptRoot 'VerifyInstallerMsi.ps1') -Version $Version -BuildRoot $BuildRoot
+    if ($LASTEXITCODE -ne 0) { throw 'Windows 安装器内部安全审计失败。' }
 } finally {
     Pop-Location
     if ($hadMirrorSetting) {

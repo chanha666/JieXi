@@ -24,6 +24,12 @@ desktopApp/browserHelper/obj/
 desktopApp/browserHelper/publish/
 desktopApp/browserHelper/publish-net48/
 desktopApp/browserHelper/publish-net48-x64/
+desktopApp/installerHelper/bin/
+desktopApp/installerHelper/obj/
+desktopApp/installerHelper/publish-net48-x64/
+desktopApp/installerHelper/publish-win-x64/
+desktopApp/installerHelper.Tests/bin/
+desktopApp/installerHelper.Tests/obj/
 /debug.keystore
 
 # 发布密钥与签名旁车文件只能保存在仓库外部。

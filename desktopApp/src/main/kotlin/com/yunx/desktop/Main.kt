@@ -34,6 +34,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.InsertDriveFile
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Article
 import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Cloud
@@ -43,6 +44,7 @@ import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.DataObject
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -133,6 +135,7 @@ import com.yunx.desktop.core.TaskState
 import com.yunx.desktop.browser.EmbeddedLoginImporter
 import com.yunx.desktop.security.CredentialKey
 import com.yunx.desktop.settings.DesktopPreset
+import com.yunx.desktop.settings.DesktopSupportLinks
 import com.yunx.desktop.update.DesktopRelease
 import com.yunx.desktop.system.SingleInstanceGuard
 import com.yunx.desktop.media.DesktopMediaTask
@@ -1686,6 +1689,16 @@ private fun SettingsPage(controller: DesktopAppController) {
                         controller.openDirectory(file.parentFile)
                         "诊断包已导出：${file.name}"
                     }.getOrElse { it.message ?: "诊断包导出失败" }
+                }
+                HorizontalDivider(color = Line)
+                SettingsActionRow(Icons.AutoMirrored.Outlined.OpenInNew, "GitHub 问题反馈", "chanha666/JieXi · 提交问题与建议") {
+                    if (!controller.openGitHubFeedback()) message = "请先填写并保存你的反馈仓库地址"
+                }
+                HorizontalDivider(color = Line)
+                SettingsActionRow(Icons.Outlined.Email, "QQ 邮箱反馈", "${DesktopSupportLinks.FEEDBACK_EMAIL} · 打开默认邮件应用") {
+                    message = runCatching {
+                        if (controller.openSupportEmail()) "已打开默认邮件应用" else "系统没有可用的邮件应用"
+                    }.getOrElse { it.message ?: "无法打开默认邮件应用" }
                 }
             }
         }

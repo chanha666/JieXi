@@ -13,7 +13,7 @@ permissions:
   security-events: write
 
 jobs:
-  analyze:
+  analyze-java-kotlin:
     runs-on: windows-latest
     timeout-minutes: 45
     env:
@@ -32,4 +32,21 @@ jobs:
       - name: Build analyzed source
         shell: pwsh
         run: .\gradlew.bat --no-daemon :sharedCore:test :app:compileDebugKotlin :desktopApp:classes
+      - uses: github/codeql-action/analyze@v4
+
+  analyze-csharp:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.x"
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: csharp
+          build-mode: manual
+      - name: Build installer migration helper and its test harness
+        shell: pwsh
+        run: dotnet build desktopApp/installerHelper.Tests/JieXiPreserveData.Tests.csproj --configuration Release --framework net8.0-windows
       - uses: github/codeql-action/analyze@v4
