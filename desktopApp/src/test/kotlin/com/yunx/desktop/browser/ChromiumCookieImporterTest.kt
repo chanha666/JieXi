@@ -5,6 +5,7 @@ import org.json.JSONObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ChromiumCookieImporterTest {
@@ -40,6 +41,21 @@ class ChromiumCookieImporterTest {
         assertFailsWith<IllegalStateException> {
             importer.cookieHeaderFor(CredentialKey.PAN123_TOKEN, emptyList())
         }
+    }
+
+    @Test
+    fun `logout removes all dedicated browser import profiles`() {
+        val root = kotlin.io.path.createTempDirectory().toFile()
+        val chrome = root.resolve("chrome/Default").apply { mkdirs() }
+        chrome.resolve("Cookies").writeText("session")
+        val edge = root.resolve("edge/Default").apply { mkdirs() }
+        edge.resolve("Cookies").writeText("session")
+        val isolated = ChromiumCookieImporter(profileRoot = root)
+
+        assertTrue(isolated.clearLoginData())
+        assertFalse(root.resolve("chrome").exists())
+        assertFalse(root.resolve("edge").exists())
+        root.deleteRecursively()
     }
 
     @Test

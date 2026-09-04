@@ -1,13 +1,17 @@
 param(
     [Parameter(Mandatory = $true)][string]$ReleaseDirectory,
-    [string]$Version = '3.1.0',
+    [string]$Version = '4.0.0',
     [string]$Repository = 'chanha666/JieXi',
     [string]$PrivateKeyPath = 'D:\CodexSecrets\解析\update-private-key.pem',
     [string]$OutputPath = (Join-Path $ReleaseDirectory 'update-manifest.json')
 )
 
 $ErrorActionPreference = 'Stop'
-$assetNames = @("JieXi-$Version-Setup.exe")
+$assetNames = @(
+    "JieXi-$Version-Windows-Setup.exe",
+    "JieXi-$Version-Windows-Portable.zip",
+    "JieXi-$Version-Android.apk"
+)
 $assets = foreach ($name in $assetNames) {
     $path = Join-Path $ReleaseDirectory $name
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "缺少发布文件：$path" }
@@ -21,7 +25,7 @@ $assets = foreach ($name in $assetNames) {
 
 $payloadObject = [ordered]@{
     tag_name = "v$Version"
-    body = "解析 $Version Windows 正式版：新增系统托盘、任务通知、防休眠、统一代理、脱敏诊断包与 Windows 自动验收。"
+    body = "解析 $Version 整合版：统一 Windows 与 Android 的网盘分享解析、公开视频下载、批量任务、断点续传、媒体工具、诊断反馈、品牌图标与签名更新。"
     published_at = [DateTimeOffset]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
     assets = @($assets)
 }

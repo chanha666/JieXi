@@ -11,14 +11,12 @@ import java.util.UUID
  * cookies, including HttpOnly cookies, through WebView2's CookieManager.
  */
 class EmbeddedLoginImporter(
-    private val cookieImporter: ChromiumCookieImporter = ChromiumCookieImporter()
+    private val cookieImporter: ChromiumCookieImporter = ChromiumCookieImporter(),
+    private val loginRoot: File = defaultLoginRoot()
 ) {
     fun loginAndImport(key: CredentialKey, loginUrl: String): String {
         val helper = findHelper()
-        val local = File(
-            System.getenv("LOCALAPPDATA") ?: File(System.getProperty("user.home"), "AppData/Local").absolutePath,
-            "解析/embedded-login"
-        ).apply { mkdirs() }
+        val local = loginRoot.apply { mkdirs() }
         local.listFiles { file -> file.name.startsWith("cookies-") && file.extension == "json" }
             ?.forEach { stale ->
                 check(deleteSensitiveFile(stale)) { "旧的登录授权临时文件无法清理，请关闭占用它的程序后重试" }
@@ -77,6 +75,12 @@ class EmbeddedLoginImporter(
         return runCatching { file.delete() && !file.exists() }.getOrDefault(false)
     }
 
+    /** Remove the persistent WebView2 profile as part of a real logout. */
+    fun clearLoginData(key: CredentialKey): Boolean {
+        val profile = File(loginRoot, "profile-${key.name.lowercase()}")
+        return deleteOwnedTree(profile, loginRoot)
+    }
+
     private fun findHelper(): File {
         val launcher = ProcessHandle.current().info().command().orElse(null)?.let(::File)
         val candidates = listOfNotNull(
@@ -86,5 +90,27 @@ class EmbeddedLoginImporter(
         )
         return candidates.firstOrNull(File::isFile)
             ?: error("内置登录组件缺失，请重新安装完整版")
+    }
+
+    companion object {
+        private fun defaultLoginRoot(): File = File(
+            System.getenv("LOCALAPPDATA") ?: File(System.getProperty("user.home"), "AppData/Local").absolutePath,
+            "解析/embedded-login"
+        )
+
+        internal fun deleteOwnedTree(target: File, ownerRoot: File): Boolean {
+            if (!target.exists()) return true
+            val rootPath = ownerRoot.toPath().toAbsolutePath().normalize()
+            val targetPath = target.toPath().toAbsolutePath().normalize()
+            if (targetPath == rootPath || !targetPath.startsWith(rootPath)) return false
+            return runCatching {
+                java.nio.file.Files.walk(targetPath).use { paths ->
+                    paths.sorted(Comparator.reverseOrder()).forEach { path ->
+                        java.nio.file.Files.deleteIfExists(path)
+                    }
+                }
+                !target.exists()
+            }.getOrDefault(false)
+        }
     }
 }

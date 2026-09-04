@@ -1,0 +1,139 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "JieXi-4.0.0-release-components",
+  "documentNamespace": "https://github.com/chanha666/JieXi/releases/tag/v4.0.0/sbom-4.0.0",
+  "creationInfo": {
+    "created": "2026-09-04T00:00:00Z",
+    "creators": ["Tool: JieXi release audit"]
+  },
+  "packages": [
+    {
+      "name": "JieXi",
+      "SPDXID": "SPDXRef-Package-JieXi",
+      "versionInfo": "4.0.0",
+      "downloadLocation": "https://github.com/chanha666/JieXi",
+      "filesAnalyzed": false,
+      "licenseConcluded": "AGPL-3.0-only",
+      "licenseDeclared": "AGPL-3.0-only",
+      "supplier": "Organization: JieXi contributors"
+    },
+    {
+      "name": "yt-dlp",
+      "SPDXID": "SPDXRef-Package-yt-dlp",
+      "versionInfo": "2026.08.19",
+      "downloadLocation": "https://github.com/yt-dlp/yt-dlp/releases/tag/2026.08.19",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Unlicense",
+      "licenseDeclared": "Unlicense",
+      "checksums": [{"algorithm": "SHA256", "checksumValue": "66674953fe251b89f4d08c5f0e35e0728679bd67ab3d7d05c0562af101dd3e7a"}]
+    },
+    {
+      "name": "Deno",
+      "SPDXID": "SPDXRef-Package-Deno",
+      "versionInfo": "2.9.6",
+      "downloadLocation": "https://github.com/denoland/deno/releases/tag/v2.9.6",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "checksums": [{"algorithm": "SHA256", "checksumValue": "2ff9493dfa356be2975f477025ea770088e9e9cb2c83d983236d13561b96b7a6"}]
+    },
+    {
+      "name": "FFmpeg-BtbN-win64-gpl-shared",
+      "SPDXID": "SPDXRef-Package-FFmpeg",
+      "versionInfo": "N-126337-g818cecc6e1-20260830",
+      "downloadLocation": "https://github.com/BtbN/FFmpeg-Builds",
+      "sourceInfo": "FFmpeg source commit 818cecc6e1; build configured with --enable-gpl --enable-version3",
+      "filesAnalyzed": false,
+      "licenseConcluded": "GPL-3.0-or-later",
+      "licenseDeclared": "GPL-3.0-or-later"
+    },
+    {
+      "name": "youtubedl-android",
+      "SPDXID": "SPDXRef-Package-youtubedl-android",
+      "versionInfo": "0.18.1",
+      "downloadLocation": "https://github.com/yausername/youtubedl-android",
+      "filesAnalyzed": false,
+      "licenseConcluded": "GPL-3.0-only",
+      "licenseDeclared": "GPL-3.0-only"
+    },
+    {
+      "name": "Kotlin",
+      "SPDXID": "SPDXRef-Package-Kotlin",
+      "versionInfo": "2.1.0",
+      "downloadLocation": "https://github.com/JetBrains/kotlin",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "name": "Compose-Multiplatform",
+      "SPDXID": "SPDXRef-Package-Compose",
+      "versionInfo": "1.8.2",
+      "downloadLocation": "https://github.com/JetBrains/compose-multiplatform",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "name": "OkHttp",
+      "SPDXID": "SPDXRef-Package-OkHttp",
+      "versionInfo": "4.12.0",
+      "downloadLocation": "https://github.com/square/okhttp",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "name": "AndroidX-Room",
+      "SPDXID": "SPDXRef-Package-Room",
+      "versionInfo": "2.6.1",
+      "downloadLocation": "https://android.googlesource.com/platform/frameworks/support",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "name": "Gson",
+      "SPDXID": "SPDXRef-Package-Gson",
+      "versionInfo": "2.13.2",
+      "downloadLocation": "https://github.com/google/gson",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "name": "Coil",
+      "SPDXID": "SPDXRef-Package-Coil",
+      "versionInfo": "2.7.0",
+      "downloadLocation": "https://github.com/coil-kt/coil",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "name": "JNA",
+      "SPDXID": "SPDXRef-Package-JNA",
+      "versionInfo": "5.17.0",
+      "downloadLocation": "https://github.com/java-native-access/jna",
+      "filesAnalyzed": false,
+      "licenseConcluded": "(LGPL-2.1-or-later OR Apache-2.0)",
+      "licenseDeclared": "(LGPL-2.1-or-later OR Apache-2.0)"
+    }
+  ],
+  "relationships": [
+    {"spdxElementId": "SPDXRef-DOCUMENT", "relationshipType": "DESCRIBES", "relatedSpdxElement": "SPDXRef-Package-JieXi"},
+    {"spdxElementId": "SPDXRef-Package-JieXi", "relationshipType": "DEPENDS_ON", "relatedSpdxElement": "SPDXRef-Package-yt-dlp"},
+    {"spdxElementId": "SPDXRef-Package-JieXi", "relationshipType": "DEPENDS_ON", "relatedSpdxElement": "SPDXRef-Package-Deno"},
+    {"spdxElementId": "SPDXRef-Package-JieXi", "relationshipType": "DEPENDS_ON", "relatedSpdxElement": "SPDXRef-Package-FFmpeg"},
+    {"spdxElementId": "SPDXRef-Package-JieXi", "relationshipType": "DEPENDS_ON", "relatedSpdxElement": "SPDXRef-Package-youtubedl-android"},
+    {"spdxElementId": "SPDXRef-Package-JieXi", "relationshipType": "DEPENDS_ON", "relatedSpdxElement": "SPDXRef-Package-Kotlin"},
+    {"spdxElementId": "SPDXRef-Package-JieXi", "relationshipType": "DEPENDS_ON", "relatedSpdxElement": "SPDXRef-Package-Compose"},
+    {"spdxElementId": "SPDXRef-Package-JieXi", "relationshipType": "DEPENDS_ON", "relatedSpdxElement": "SPDXRef-Package-OkHttp"},
+    {"spdxElementId": "SPDXRef-Package-JieXi", "relationshipType": "DEPENDS_ON", "relatedSpdxElement": "SPDXRef-Package-Room"},
+    {"spdxElementId": "SPDXRef-Package-JieXi", "relationshipType": "DEPENDS_ON", "relatedSpdxElement": "SPDXRef-Package-Gson"},
+    {"spdxElementId": "SPDXRef-Package-JieXi", "relationshipType": "DEPENDS_ON", "relatedSpdxElement": "SPDXRef-Package-Coil"},
+    {"spdxElementId": "SPDXRef-Package-JieXi", "relationshipType": "DEPENDS_ON", "relatedSpdxElement": "SPDXRef-Package-JNA"}
+  ]
+}

@@ -1,0 +1,30 @@
+解析 4.0 第三方组件声明
+========================
+
+本文件覆盖 Windows 发布包中直接捆绑的媒体组件。Gradle/Maven 依赖与 Android 媒体组件记录在同目录 SBOM.spdx.json 中。
+
+1. yt-dlp 2026.08.19
+   Source: https://github.com/yt-dlp/yt-dlp/releases/tag/2026.08.19
+   License: Unlicense
+   License text: licenses/yt-dlp-LICENSE.txt
+   Bundled dependency notices: licenses/yt-dlp-THIRD_PARTY_LICENSES.txt
+
+2. Deno 2.9.6
+   Source: https://github.com/denoland/deno/releases/tag/v2.9.6
+   License: MIT
+   License text: licenses/Deno-LICENSE.txt
+
+3. FFmpeg N-126337-g818cecc6e1-20260830, GPL shared build
+   Build source: https://github.com/BtbN/FFmpeg-Builds
+   Corresponding FFmpeg source: https://github.com/FFmpeg/FFmpeg/commit/818cecc6e1
+   License: GPL-3.0-or-later because this build enables GPL and version 3 components
+   License text: licenses/FFmpeg-LICENSE.txt
+   Build configuration: run ffmpeg/bin/ffmpeg.exe -buildconf
+
+4. WeChat Channels public-share extractor
+   Source: https://github.com/yt-dlp/yt-dlp/pull/17390
+   Source commit: d841cddceacbc0bd770c03bbffc94aed7692a08c
+   License: Unlicense
+   Attribution and local-change note: licenses/WECHAT-EXTRACTOR.txt
+
+The JieXi application itself is licensed under GNU AGPL-3.0. The components above remain under their own licenses. Nothing in this notice grants access to private, paid, DRM-protected or otherwise restricted media.

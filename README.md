@@ -1,51 +1,80 @@
-# 解析（JieXi）— Windows 网盘分享链接解析与高速下载工具
+# 解析（JieXi）— 网盘分享与公开视频下载工具
 
-“解析”是一款适用于 Windows 的网盘分享链接解析、文件提取和高速下载工具，支持夸克网盘、UC 网盘、百度网盘、123 云盘、中国移动云盘（139 网盘）和迅雷云盘。3.1.0 版提供批量下载队列、断点续传、失败重试、代理、托盘通知、诊断中心、GitHub 反馈与经过签名校验的应用内更新。
+“解析”4.0 是一个同时提供 Windows 与 Android 安装包的本地下载工具。它把网盘分享解析、公开视频下载、批量任务、断点续传、历史收藏、诊断反馈和常用媒体处理放进同一品牌应用中。
 
 ## 下载
 
-请从本仓库的 [Releases](https://github.com/chanha666/JieXi/releases) 页面下载：
+正式版本从本仓库的 [Releases](https://github.com/chanha666/JieXi/releases) 下载：
 
-- Windows 安装版：`JieXi-3.1.0-Setup.exe`
-- Windows 绿色版：`JieXi-3.1.0-Portable.zip`
-- 完整源码：仓库内容或 Release 中的源码包
+- Windows 安装版：`JieXi-4.0.0-Windows-Setup.exe`
+- Windows 绿色版：`JieXi-4.0.0-Windows-Portable.zip`
+- Android 安装包：`JieXi-4.0.0-Android.apk`
+- 文件校验：`SHA256SUMS.txt`
+- 构建信息：`BUILD-INFO.txt`
 
-每个正式版本都附带 `SHA256SUMS.txt`。软件的在线更新清单使用独立 RSA 私钥签名，客户端内置公钥并在安装前再次校验安装包 SHA-256；私钥不进入仓库。
+Windows 绿色版解压后双击“解析.exe”，不需要另装 Java、Python、yt-dlp 或 FFmpeg。Android 公开 APK 使用新的 RSA 4096 位发行证书：首次安装以及今后同一发行证书签署的版本可以正常覆盖升级。早期 debug 测试版不属于同一公开发行链；Android 7–12（API 24–32）需要先卸载旧测试版再安装。Android 13 及以上（API 33+）如需保留旧测试版数据，只能使用单独提供的迁移 APK；该迁移包不作为普通公开 Release 附件。
 
-## 核心功能
+## 能做什么
 
-- 解析夸克、UC、迅雷、百度、123、139 等网盘分享链接
-- 内置网盘登录流程，并在本机保存所需认证信息
-- Range 分片并发、断点续传、失败重试、批量队列和任务删除
-- 单任务最高速预设，并可按网络状况调整并发
-- 历史记录、收藏、下载预设和平台可用状态
-- Windows 诊断日志、敏感字段脱敏和问题反馈入口
-- 一键导出脱敏诊断包、系统/HTTP/SOCKS5 代理
-- 系统托盘、下载通知、单实例保护和下载期间防休眠
-- 浅色、深色、跟随系统及自定义主题
-- Windows 安装版与免安装绿色版
+### 网盘分享
 
-## 使用
+- 夸克网盘、UC 网盘、迅雷云盘、百度网盘、123 云盘和中国移动云盘（139）
+- 分享链接识别、提取码、目录浏览、批量选择和下载
+- 软件内登录、凭据本机加密保存、失效状态提示和重新登录
+- 分片并发、断点续传、失败重试、暂停、继续、取消和任务删除
 
-1. 在“网盘”页登录需要使用的平台。
-2. 在“解析”页粘贴分享链接和提取码。
-3. 选择文件并开始下载。
-4. 在“下载”页暂停、继续、删除或打开任务。
+### 公开视频
 
-默认优先把 Windows 文件保存到 `D:\解析下载`；如果没有可写的 D 盘，则退回当前用户的下载目录。下载位置可在设置中修改。
+- 可识别 YouTube、哔哩哔哩、抖音、X、TikTok、小红书、微博、AcFun、视频号及 yt-dlp 支持的公开页面；能否下载仍取决于原站当时实际开放的格式与风控
+- MP4/HLS 等媒体直链、批量粘贴、最高开放画质、4K/8K 格式识别、仅音频和字幕参数
+- 抖音与 X 的公开页面快速解析，失败后回退本地 yt-dlp 核心
+- Windows 内置 yt-dlp、FFmpeg、ffprobe 与 Deno；Android 内置 youtube-dl-android、FFmpeg 与 Aria2
 
-## 构建
+“最高画质”只表示链接在匿名状态或当前账号权限下实际开放的最高格式。软件不会把低清视频放大成真正的 4K/8K，也不绕过 DRM、会员权益、付费墙或平台访问控制。部分网站会要求登录、验证码或 Cookie；这由原站决定，软件不会伪造权限。
 
-环境要求：JDK 17；构建 Windows 安装包另需 WiX 3。项目包含 Gradle Wrapper，不需要 Android SDK。
+当前发布前实测中：抖音已在 Android 完成 148,915,518 字节成品下载，Windows 完成解析与分段读取；X 已完成 H.264 720p 成品下载；哔哩哔哩已通过官方匿名接口完成 720p 成品下载，并在 Android 模拟器完成解析。哔哩哔哩压力或频繁请求仍可能返回 403。YouTube 匿名样本受到站点挑战，不能标记为匿名下载通过。其余列出的站点是适配目标，不代表全部已经逐站实测通过。
+
+### 本地媒体工具
+
+- 图片局部修复：框选图片中的水印或遮挡区域，离线生成新文件，不覆盖原图
+- 从本地视频提取 MP3
+- 按时间点截取视频画面
+- Windows 可导出分辨率、编码、码率和时长等媒体信息
+
+## 两个平台的使用方法
+
+Windows：打开“解析”后，在首页粘贴网盘链接，或进入“视频下载”粘贴公开视频链接；任务统一显示在“下载”页。默认保存到 `D:\解析下载`，D 盘不可用时退回当前用户下载目录，也可以在设置中修改。
+
+Android：主界面处理网盘分享，“视频工具”处理公开视频与本地媒体；系统分享菜单也可以把文字链接发送到“解析”。公开视频成品写入系统 `Download/解析`，网盘文件写入系统下载目录或用户在设置中选择的目录。
+
+更详细的操作说明见 [Windows 使用说明](README-Desktop.md) 和 [Android 使用说明](README-Android.md)。
+
+## 更新、安全与反馈
+
+- Windows 与 Android 只读取作者发布的 HTTPS 更新地址和 RSA 签名清单。
+- Windows 与 Android 下载更新后都会核对清单中的 SHA-256；Android 还会预检包名、版本号和发行证书，并由系统安装器再次核对签名。
+- 登录凭据只保存在本机：Windows 使用 DPAPI，Android 使用 Android Keystore；导出的诊断日志会脱敏。
+- 每个 Release 同时提供 `SHA256SUMS.txt`，可以独立核对下载文件。
+- Windows 安装包目前未使用商业 Authenticode 证书，首次下载可能出现 SmartScreen 提示；这与应用内更新清单签名是两件不同的事。
+- 问题反馈：[GitHub Issues](https://github.com/chanha666/JieXi/issues/new) 或 `3316109338@qq.com`。
+
+## 从源码构建
+
+需要 JDK 17；构建 Android 还需要 Android SDK；构建 Windows 登录组件需要 .NET 8 SDK，安装版还需要 WiX 3。项目自带 Gradle Wrapper。Windows 媒体二进制使用 Git LFS 保存，首次克隆后请先执行 `git lfs pull`。
 
 ```powershell
-.\gradlew.bat :desktopApp:test :desktopApp:packagePortable :desktopApp:packageInstaller
+# Windows 编译、测试与绿色版
+.\gradlew.bat :sharedCore:test :desktopApp:test :desktopApp:packagePortable
+
+# Android 调试验收
+.\gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+
+# 本机正式发布（需要 D:\CodexSecrets\解析 中的作者私钥）
+.\tools\BuildRelease.ps1
 ```
 
-发布密钥与在线更新地址由 `D:\CodexSecrets\解析\release.properties` 在构建时注入。该文件不属于源码，也不得提交。公开源码默认仍可构建，但正式签名和在线更新需要发布者自行配置密钥。
+Windows 媒体核心位于 `tools/media-engine`，打包时会生成并复核逐文件 SHA-256 清单。正式签名配置放在 `D:\CodexSecrets\解析\release.properties`，不属于源码且不得提交。
 
 ## 来源与许可证
 
-本项目在 [CYQawa/YunX](https://github.com/CYQawa/YunX) 基础上重新设计并扩展 Windows 桌面端、发布安全、诊断及批量下载功能。原项目及本项目依照 [GNU AGPL-3.0](LICENSE) 发布。分发修改版本时必须保留相应版权和许可证声明，并按 AGPL-3.0 提供对应源代码。
-
-本工具不提供或绕过网盘会员权益、DRM 或平台访问控制。平台接口可能调整；如遇失败，可通过本仓库的 [Issues](https://github.com/chanha666/JieXi/issues) 提交诊断信息。
+本项目在 [CYQawa/YunX](https://github.com/CYQawa/YunX) 基础上扩展，并融合了独立公开视频下载与本地媒体工具。项目依照 [GNU AGPL-3.0](LICENSE) 发布；分发修改版本时必须保留许可证和上游归属，并按 AGPL-3.0 提供对应源代码。内置 yt-dlp、FFmpeg、Deno 及站点插件保留各自许可证，随 Windows 包一并分发。

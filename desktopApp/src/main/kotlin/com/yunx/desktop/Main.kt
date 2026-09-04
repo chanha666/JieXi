@@ -51,6 +51,16 @@ import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Redeem
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Memory
+import androidx.compose.material.icons.outlined.OndemandVideo
+import androidx.compose.material.icons.outlined.Build
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Pause
+import androidx.compose.material.icons.outlined.Cancel
+import androidx.compose.material.icons.outlined.Subtitles
+import androidx.compose.material.icons.outlined.AudioFile
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.Settings
@@ -70,6 +80,8 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -123,12 +135,17 @@ import com.yunx.desktop.security.CredentialKey
 import com.yunx.desktop.settings.DesktopPreset
 import com.yunx.desktop.update.DesktopRelease
 import com.yunx.desktop.system.SingleInstanceGuard
+import com.yunx.desktop.media.DesktopMediaTask
+import com.yunx.desktop.media.MediaTaskState
+import com.yunx.desktop.media.DesktopMediaController
+import com.yunx.desktop.media.WatermarkSelectionDialog
 import com.yunx.app.data.network.ProxyMode
 import java.io.File
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
 import javax.swing.JFileChooser
 import javax.swing.JOptionPane
+import javax.swing.filechooser.FileNameExtensionFilter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -151,6 +168,12 @@ private val Success = Color(0xFF128665)
 private val SuccessSoft = Color(0xFFE1F6EE)
 private val Warning = Color(0xFFB76A13)
 private val WarningSoft = Color(0xFFFFF1D9)
+
+private const val SPONSOR_IMAGE_ALIPAY = "donate_alipay.jpg"
+private const val SPONSOR_IMAGE_WECHAT = "donate_wechat.jpg"
+private const val APP_FEEDBACK_REPO_PLACEHOLDER = "https://github.com/你的仓库/你的项目"
+private const val APP_ICON_RESOURCE = "icon.png"
+private const val APP_ICON_BRAND_RESOURCE = "icon_brand.png"
 private val Purple = Color(0xFF6B62D9)
 private val Error = Color(0xFFB3261E)
 
@@ -239,10 +262,7 @@ fun main() {
 }
 
 private fun loadDesktopIcon(): BitmapPainter {
-    val bytes = checkNotNull(Thread.currentThread().contextClassLoader.getResourceAsStream("icon.png")) {
-        "Missing desktop icon resource"
-    }.use { it.readBytes() }
-    return BitmapPainter(SkiaImage.makeFromEncoded(bytes).toComposeImageBitmap())
+    return loadResourcePainter(listOf(APP_ICON_BRAND_RESOURCE, APP_ICON_RESOURCE))
 }
 
 private fun loadResourcePainter(resourceName: String): BitmapPainter {
@@ -250,6 +270,16 @@ private fun loadResourcePainter(resourceName: String): BitmapPainter {
         "Missing resource: $resourceName"
     }.use { it.readBytes() }
     return BitmapPainter(SkiaImage.makeFromEncoded(bytes).toComposeImageBitmap())
+}
+
+private fun loadResourcePainter(resourceNames: List<String>): BitmapPainter {
+    for (resourceName in resourceNames) {
+        val stream = Thread.currentThread().contextClassLoader.getResourceAsStream(resourceName) ?: continue
+        return stream.use {
+            BitmapPainter(SkiaImage.makeFromEncoded(it.readBytes()).toComposeImageBitmap())
+        }
+    }
+    error("Missing resource: ${resourceNames.joinToString()}")
 }
 
 @Composable
@@ -275,7 +305,9 @@ private fun YunXDesktopApp(controller: DesktopAppController) {
             ) { page ->
                 when (page) {
                     AppPage.RESOLVE -> ResolvePage(controller)
+                    AppPage.MEDIA -> MediaPage(controller)
                     AppPage.DOWNLOADS -> DownloadsPage(controller)
+                    AppPage.TOOLS -> MediaToolsPage(controller)
                     AppPage.LIBRARY -> LibraryPage(controller)
                     AppPage.STATUS -> StatusPage(controller)
                     AppPage.ACCOUNTS -> AccountsPage(controller)
@@ -290,6 +322,7 @@ private fun YunXDesktopApp(controller: DesktopAppController) {
 
 @Composable
 private fun SidebarNavigation(selected: AppPage, onSelect: (AppPage) -> Unit) {
+    val brandMark = remember { loadDesktopIcon() }
     Column(
         Modifier.width(224.dp).fillMaxHeight().clip(RoundedCornerShape(22.dp)).background(
             Brush.verticalGradient(listOf(Color(0xFFF0F7FB), Sidebar))
@@ -302,7 +335,12 @@ private fun SidebarNavigation(selected: AppPage, onSelect: (AppPage) -> Unit) {
                     Modifier.size(38.dp).clip(RoundedCornerShape(13.dp)).background(WarmCard),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Outlined.Link, null, tint = Accent, modifier = Modifier.size(21.dp))
+                    Image(
+                        painter = brandMark,
+                        contentDescription = "解析图标",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.size(27.dp)
+                    )
                 }
                 Spacer(Modifier.width(11.dp))
                 Column {
@@ -312,7 +350,9 @@ private fun SidebarNavigation(selected: AppPage, onSelect: (AppPage) -> Unit) {
             }
             Spacer(Modifier.height(28.dp))
             NavigationItem("解析", Icons.Outlined.Link, selected == AppPage.RESOLVE) { onSelect(AppPage.RESOLVE) }
+            NavigationItem("视频下载", Icons.Outlined.OndemandVideo, selected == AppPage.MEDIA) { onSelect(AppPage.MEDIA) }
             NavigationItem("下载", Icons.Outlined.Download, selected == AppPage.DOWNLOADS) { onSelect(AppPage.DOWNLOADS) }
+            NavigationItem("媒体工具", Icons.Outlined.Build, selected == AppPage.TOOLS) { onSelect(AppPage.TOOLS) }
             NavigationItem("历史收藏", Icons.Outlined.Save, selected == AppPage.LIBRARY) { onSelect(AppPage.LIBRARY) }
             NavigationItem("平台状态", Icons.Outlined.Hub, selected == AppPage.STATUS) { onSelect(AppPage.STATUS) }
             NavigationItem("云盘登录", Icons.Outlined.Cloud, selected == AppPage.ACCOUNTS) { onSelect(AppPage.ACCOUNTS) }
@@ -329,7 +369,7 @@ private fun SidebarNavigation(selected: AppPage, onSelect: (AppPage) -> Unit) {
                 }
             }
             Spacer(Modifier.height(8.dp))
-            NavigationItem("赞赏", Icons.Outlined.FavoriteBorder, selected == AppPage.SPONSOR) { onSelect(AppPage.SPONSOR) }
+            NavigationItem("赞赏支持", Icons.Outlined.FavoriteBorder, selected == AppPage.SPONSOR) { onSelect(AppPage.SPONSOR) }
             NavigationItem("设置", Icons.Outlined.Settings, selected == AppPage.SETTINGS) { onSelect(AppPage.SETTINGS) }
         }
     }
@@ -383,7 +423,7 @@ private fun ResolvePage(controller: DesktopAppController) {
             ) {
                 Icon(Icons.Outlined.FavoriteBorder, null, modifier = Modifier.size(17.dp))
                 Spacer(Modifier.width(7.dp))
-                Text("赞赏作者")
+                Text("支持开发")
             }
         }
     ) {
@@ -667,15 +707,318 @@ private fun FileRow(file: ShareFile, onFolder: (ShareFile) -> Unit, onDownload: 
 }
 
 @Composable
-private fun DownloadsPage(controller: DesktopAppController) {
-    PageFrame("下载", "智能并发、断点续传与文件完整性校验") {
-        if (controller.downloads.isEmpty()) {
-            EmptyState(Icons.Outlined.Download, "还没有下载任务", "解析分享链接后，选择文件开始下载")
-        } else {
-            val active = controller.downloads.count { it.state == TaskState.PREPARING || it.state == TaskState.DOWNLOADING }
-            val completed = controller.downloads.count { it.state == TaskState.COMPLETED }
+private fun MediaPage(controller: DesktopAppController) {
+    val media = controller.media
+    var formatMenu by remember { mutableStateOf(false) }
+    PageFrame(
+        "公开视频下载",
+        "粘贴一个或多个链接；自动识别平台、优先无水印公开源并按最高速度排队",
+        action = {
+            OutlinedButton(onClick = { controller.page = AppPage.TOOLS }, shape = RoundedCornerShape(12.dp)) {
+                Icon(Icons.Outlined.Build, null, modifier = Modifier.size(17.dp))
+                Spacer(Modifier.width(7.dp))
+                Text("媒体工具")
+            }
+        }
+    ) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE6C7AD)),
+                shape = RoundedCornerShape(22.dp)
+            ) {
+                Column(
+                    Modifier.background(Brush.linearGradient(listOf(Color(0xFFFFFDF8), Color(0xFFFFF3E6), Color(0xFFF8FBFD))))
+                        .padding(22.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier.size(45.dp).clip(RoundedCornerShape(15.dp)).background(AccentSoft),
+                            contentAlignment = Alignment.Center
+                        ) { Icon(Icons.Outlined.OndemandVideo, null, tint = Accent, modifier = Modifier.size(23.dp)) }
+                        Spacer(Modifier.width(13.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("公开资源，一次粘贴就开始", fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+                            Text("YouTube、哔哩哔哩、抖音、X、TikTok、小红书、微博、视频号与通用网站", color = Muted, fontSize = 11.sp)
+                        }
+                        Surface(color = SuccessSoft, shape = RoundedCornerShape(18.dp)) {
+                            Text("匿名模式", color = Success, fontSize = 10.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = media.inputText,
+                        onValueChange = media::acceptInput,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 98.dp),
+                        placeholder = { Text("粘贴视频链接或整段分享文字；支持多链接批量加入队列") },
+                        enabled = !media.analyzing && !media.queueing,
+                        shape = RoundedCornerShape(15.dp)
+                    )
+                    Spacer(Modifier.height(11.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedButton(
+                            onClick = { readClipboardText()?.let(media::acceptInput) },
+                            enabled = !media.analyzing && !media.queueing,
+                            modifier = Modifier.height(46.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Outlined.ContentPaste, null, modifier = Modifier.size(17.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("粘贴")
+                        }
+                        Spacer(Modifier.width(9.dp))
+                        Button(
+                            onClick = media::analyze,
+                            enabled = media.inputText.isNotBlank() && !media.analyzing && !media.queueing,
+                            modifier = Modifier.height(46.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Accent)
+                        ) {
+                            if (media.analyzing) {
+                                CircularProgressIndicator(Modifier.size(17.dp), color = Color.White, strokeWidth = 2.dp)
+                                Spacer(Modifier.width(7.dp))
+                            }
+                            Text(if (media.analyzing) "正在解析" else "解析第一个链接")
+                        }
+                        Spacer(Modifier.weight(1f))
+                        Text("公开视频原站提供 4K / 8K 时可直接选择", color = Muted, fontSize = 10.sp)
+                    }
+                }
+            }
+
+            media.analysisError?.let { message ->
+                Spacer(Modifier.height(10.dp))
+                Surface(color = Color(0xFFFFECEA), shape = RoundedCornerShape(11.dp)) {
+                    Text(message, color = Error, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(11.dp))
+                }
+            }
+
+            media.preview?.let { preview ->
+                Spacer(Modifier.height(14.dp))
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = WarmCard),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Line),
+                    shape = RoundedCornerShape(17.dp)
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(18.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                Modifier.size(68.dp).clip(RoundedCornerShape(14.dp)).background(OrangeSoft),
+                                contentAlignment = Alignment.Center
+                            ) { Icon(Icons.Outlined.PlayArrow, null, tint = Orange, modifier = Modifier.size(32.dp)) }
+                            Spacer(Modifier.width(14.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(preview.platform, color = Accent, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                                Text(preview.title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Text(
+                                    listOf(preview.uploader, formatDurationDesktop(preview.durationSeconds), preview.engine).filter(String::isNotBlank).joinToString(" · "),
+                                    color = Muted,
+                                    fontSize = 10.sp
+                                )
+                                if (preview.downloadUrl.isNotBlank()) Text("已提取可直接下载的公开源", color = Success, fontSize = 10.sp)
+                            }
+                        }
+                        preview.warning?.let {
+                            Spacer(Modifier.height(9.dp))
+                            Text(it, color = Warning, fontSize = 10.sp)
+                        }
+                        Spacer(Modifier.height(14.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.weight(1f)) {
+                                OutlinedButton(onClick = { formatMenu = true }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(11.dp)) {
+                                    Text(media.selectedFormat?.label ?: "自动选择最高画质", Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text("⌄")
+                                }
+                                DropdownMenu(expanded = formatMenu, onDismissRequest = { formatMenu = false }) {
+                                    preview.formats.forEach { choice ->
+                                        DropdownMenuItem(
+                                            text = { Text(choice.label, fontSize = 12.sp) },
+                                            onClick = { media.selectedFormat = choice; formatMenu = false }
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.width(14.dp))
+                            Checkbox(media.embedSubtitles, { media.embedSubtitles = it })
+                            Text("尝试嵌入中英文字幕", fontSize = 11.sp)
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Button(
+                    onClick = media::enqueueAll,
+                    enabled = media.inputText.isNotBlank() && !media.queueing && !media.analyzing,
+                    modifier = Modifier.height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Orange)
+                ) {
+                    if (media.queueing) {
+                        CircularProgressIndicator(Modifier.size(17.dp), color = Color.White, strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(if (media.queueing) "正在批量识别" else "全部加入队列并下载")
+                }
+                Spacer(Modifier.width(10.dp))
+                OutlinedButton(onClick = { controller.page = AppPage.DOWNLOADS }, modifier = Modifier.height(48.dp), shape = RoundedCornerShape(12.dp)) {
+                    Text("查看下载任务 (${media.tasks.size})")
+                }
+                Spacer(Modifier.weight(1f))
+                Text("默认单任务满速 · 失败自动保留断点", color = Muted, fontSize = 10.sp)
+            }
+
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                listOf("YouTube", "哔哩哔哩", "抖音", "X", "TikTok", "小红书", "微博", "视频号").forEach { name ->
+                    Surface(color = WarmCard, border = androidx.compose.foundation.BorderStroke(1.dp, Line), shape = RoundedCornerShape(18.dp)) {
+                        Text(name, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp))
+                    }
+                }
+            }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun MediaToolsPage(controller: DesktopAppController) {
+    val media = controller.media
+    var screenshotSecond by remember { mutableStateOf("1.0") }
+    PageFrame("媒体工具", "所有处理都在本机完成：图片去水印、音频提取、视频截图与媒体信息") {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = WarmCard),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Line),
+                shape = RoundedCornerShape(17.dp)
+            ) {
+                Column(Modifier.fillMaxWidth().padding(18.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(42.dp).clip(RoundedCornerShape(13.dp)).background(SuccessSoft), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Outlined.Verified, null, tint = Success, modifier = Modifier.size(21.dp))
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("本地媒体核心", fontWeight = FontWeight.SemiBold)
+                            val status = media.coreStatus
+                            Text(
+                                if (status == null) "正在检查组件…" else "yt-dlp ${status.ytDlpVersion} · FFmpeg ${status.ffmpegVersion} · Deno ${status.denoVersion}",
+                                color = if (status?.ready == false) Error else Muted,
+                                fontSize = 10.sp
+                            )
+                        }
+                        TextButton(onClick = media::refreshCoreStatus, enabled = !media.coreChecking) { Text("重新检查") }
+                        TextButton(onClick = media::updateCore, enabled = !media.coreChecking) { Text("更新核心") }
+                    }
+                }
+            }
+            Spacer(Modifier.height(14.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                DownloadMetric("全部任务", controller.downloads.size.toString(), Accent, AccentSoft, Modifier.weight(1f))
+                MediaToolCard(
+                    Modifier.weight(1f), Icons.Outlined.Image, "图片去水印", "打开图片后拖动框选水印区域，智能修复并另存新文件"
+                ) {
+                    chooseLocalFile("选择 PNG 或 JPEG 图片", listOf("png", "jpg", "jpeg"))?.let { source ->
+                        media.toolMessage = "已选择 ${source.name}，正在打开框选工具…"
+                        openWatermarkTool(source, media)
+                    }
+                }
+                MediaToolCard(
+                    Modifier.weight(1f), Icons.Outlined.AudioFile, "提取 MP3", "从本地视频导出最高质量 MP3 音频"
+                ) {
+                    chooseLocalFile("选择视频", listOf("mp4", "mkv", "mov", "webm", "avi", "flv"))?.let(media::extractAudio)
+                }
+                MediaToolCard(
+                    Modifier.weight(1f), Icons.Outlined.Info, "导出媒体信息", "生成包含编码、分辨率、码率和时长的 JSON"
+                ) {
+                    chooseLocalFile("选择媒体文件", listOf("mp4", "mkv", "mov", "webm", "mp3", "m4a", "flac"))?.let(media::exportMetadata)
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Card(
+                colors = CardDefaults.cardColors(containerColor = WarmCard),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Line),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(Modifier.fillMaxWidth().padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.OndemandVideo, null, tint = Accent, modifier = Modifier.size(24.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("视频截图", fontWeight = FontWeight.SemiBold)
+                        Text("输入时间点后，从本地视频导出高清 JPG", color = Muted, fontSize = 10.sp)
+                    }
+                    OutlinedTextField(
+                        value = screenshotSecond,
+                        onValueChange = { screenshotSecond = it.filter { ch -> ch.isDigit() || ch == '.' }.take(8) },
+                        modifier = Modifier.width(130.dp),
+                        label = { Text("秒") },
+                        singleLine = true
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Button(onClick = {
+                        chooseLocalFile("选择视频", listOf("mp4", "mkv", "mov", "webm", "avi", "flv"))
+                            ?.let { media.captureFrame(it, screenshotSecond.toDoubleOrNull() ?: 1.0) }
+                    }, enabled = !media.toolBusy) { Text("选择视频并截图") }
+                }
+            }
+            media.toolMessage?.let { message ->
+                Spacer(Modifier.height(12.dp))
+                Surface(color = if ("失败" in message || "错误" in message) Color(0xFFFFECEA) else AccentSoft, shape = RoundedCornerShape(11.dp)) {
+                    Text(message, color = if ("失败" in message || "错误" in message) Error else AccentStrong, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(12.dp))
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            OutlinedButton(onClick = { controller.openDirectory(File(controller.downloadDirectory, "媒体工具")) }) {
+                Icon(Icons.Outlined.FolderOpen, null, modifier = Modifier.size(17.dp))
+                Spacer(Modifier.width(7.dp))
+                Text("打开媒体工具成品目录")
+            }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun MediaToolCard(
+    modifier: Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier.clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = WarmCard),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Line),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(Modifier.fillMaxWidth().height(148.dp).padding(17.dp)) {
+            Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(AccentSoft), contentAlignment = Alignment.Center) {
+                Icon(icon, null, tint = Accent, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.height(13.dp))
+            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            Text(subtitle, color = Muted, fontSize = 10.sp, lineHeight = 14.sp, maxLines = 2)
+            Spacer(Modifier.weight(1f))
+            Text("开始使用 →", color = Accent, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@Composable
+private fun DownloadsPage(controller: DesktopAppController) {
+    PageFrame("统一下载队列", "网盘文件与公开视频集中管理；单任务默认满速并支持断点续传") {
+        val mediaTasks = controller.media.tasks
+        if (controller.downloads.isEmpty() && mediaTasks.isEmpty()) {
+            EmptyState(Icons.Outlined.Download, "还没有下载任务", "解析网盘分享或公开视频链接后，任务会显示在这里")
+        } else {
+            val active = controller.downloads.count { it.state == TaskState.PREPARING || it.state == TaskState.DOWNLOADING } +
+                mediaTasks.count { it.state in setOf(MediaTaskState.ANALYZING, MediaTaskState.DOWNLOADING) }
+            val completed = controller.downloads.count { it.state == TaskState.COMPLETED } +
+                mediaTasks.count { it.state == MediaTaskState.COMPLETED }
+            val total = controller.downloads.size + mediaTasks.size
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                DownloadMetric("全部任务", total.toString(), Accent, AccentSoft, Modifier.weight(1f))
                 DownloadMetric("正在下载", active.toString(), Purple, Color(0xFFF3E9DF), Modifier.weight(1f))
                 DownloadMetric("已经完成", completed.toString(), Success, SuccessSoft, Modifier.weight(1f))
             }
@@ -688,6 +1031,11 @@ private fun DownloadsPage(controller: DesktopAppController) {
             val state = rememberLazyListState()
             Box(Modifier.fillMaxSize()) {
                 LazyColumn(state = state, verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxSize().padding(end = 10.dp)) {
+                    if (controller.downloads.isNotEmpty()) {
+                        item("cloud-heading") {
+                            Text("网盘文件", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
                     items(controller.downloads, key = { it.id }) { task ->
                         Card(
                             colors = CardDefaults.cardColors(containerColor = WarmCard),
@@ -740,8 +1088,86 @@ private fun DownloadsPage(controller: DesktopAppController) {
                             }
                         }
                     }
+                    if (mediaTasks.isNotEmpty()) {
+                        item("media-heading") {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("公开视频与媒体", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                                TextButton(onClick = controller.media::clearFinished) { Text("清理已完成") }
+                            }
+                        }
+                        items(mediaTasks, key = { "media-${it.id}" }) { task ->
+                            MediaTaskCard(controller, task)
+                        }
+                    }
                 }
                 VerticalScrollbar(rememberScrollbarAdapter(state), Modifier.align(Alignment.CenterEnd).fillMaxHeight())
+            }
+        }
+    }
+}
+
+@Composable
+private fun MediaTaskCard(controller: DesktopAppController, task: DesktopMediaTask) {
+    val stateColor = when (task.state) {
+        MediaTaskState.COMPLETED -> Success
+        MediaTaskState.FAILED -> Error
+        MediaTaskState.PAUSED, MediaTaskState.INTERRUPTED -> Warning
+        MediaTaskState.CANCELLED -> Muted
+        else -> Accent
+    }
+    Card(
+        colors = CardDefaults.cardColors(containerColor = WarmCard),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Line),
+        shape = RoundedCornerShape(14.dp)
+    ) {
+        Column(Modifier.fillMaxWidth().padding(17.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(OrangeSoft),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Outlined.OndemandVideo, null, tint = Orange, modifier = Modifier.size(19.dp))
+                }
+                Spacer(Modifier.width(11.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(task.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
+                    Text("${task.platform} · ${task.formatLabel}", color = Muted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Text(mediaTaskStateName(task.state), color = stateColor, fontSize = 12.sp)
+                when (task.state) {
+                    MediaTaskState.WAITING, MediaTaskState.ANALYZING, MediaTaskState.DOWNLOADING ->
+                        IconButton(onClick = { controller.media.pause(task) }) { Icon(Icons.Outlined.Pause, "暂停", tint = Muted) }
+                    MediaTaskState.PAUSED, MediaTaskState.INTERRUPTED, MediaTaskState.FAILED ->
+                        TextButton(onClick = { controller.media.resume(task) }) { Text(if (task.state == MediaTaskState.FAILED) "重试" else "继续") }
+                    else -> Unit
+                }
+                if (task.state !in setOf(MediaTaskState.COMPLETED, MediaTaskState.CANCELLED)) {
+                    IconButton(onClick = { controller.media.cancel(task) }) { Icon(Icons.Outlined.Cancel, "取消", tint = Muted) }
+                }
+                IconButton(onClick = { controller.media.remove(task) }) {
+                    Icon(Icons.Outlined.DeleteOutline, "删除任务", tint = Muted, modifier = Modifier.size(18.dp))
+                }
+            }
+            Spacer(Modifier.height(11.dp))
+            LinearProgressIndicator(
+                progress = { task.progress.coerceIn(0, 100) / 100f },
+                modifier = Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(5.dp)),
+                color = Orange,
+                trackColor = OrangeSoft
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val detail = task.error?.takeIf(String::isNotBlank)
+                    ?: listOf(task.stage, task.speed, task.eta.takeIf(String::isNotBlank)?.let { "剩余 $it" }.orEmpty())
+                        .filter(String::isNotBlank).joinToString(" · ")
+                Text(detail, color = if (task.error != null) Error else Muted, fontSize = 11.sp, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                task.outputFile?.takeIf(File::isFile)?.let { file ->
+                    TextButton(onClick = { controller.openFolder(file) }) {
+                        Icon(Icons.Outlined.FolderOpen, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(5.dp))
+                        Text("打开目录")
+                    }
+                }
             }
         }
     }
@@ -941,10 +1367,28 @@ private fun CredentialCard(controller: DesktopAppController, title: String, key:
                         }
                         if (saved) {
                             IconButton(onClick = {
-                                controller.credentialStore.remove(key)
-                                value = ""
-                                saved = false
-                                browserMessage = "已退出登录"
+                                if (embeddedBusy) return@IconButton
+                                embeddedBusy = true
+                                coroutineScope.launch {
+                                    val cleared = withContext(Dispatchers.IO) {
+                                        embeddedImporter.clearLoginData(key) and
+                                            controller.cookieImporter.clearLoginData()
+                                    }
+                                    browserError = !cleared
+                                    browserMessage = if (cleared) {
+                                        controller.credentialStore.remove(key)
+                                        value = ""
+                                        saved = false
+                                        "已退出登录，并清除专用登录会话"
+                                    } else {
+                                        // Keep the retry button visible and the encrypted
+                                        // credential consistent with the still-live browser
+                                        // session. Claiming logout succeeded here would leave
+                                        // usable cookies hidden in a locked profile.
+                                        "退出尚未完成：请关闭登录窗口，然后再次点击退出"
+                                    }
+                                    embeddedBusy = false
+                                }
                             }) { Icon(Icons.Outlined.DeleteOutline, "退出登录", tint = Muted) }
                         }
                     }
@@ -1022,8 +1466,8 @@ private fun XunleiCredentialCard(controller: DesktopAppController) {
 @Composable
 private fun SponsorPage() {
     PageFrame(
-        title = "赞赏",
-        subtitle = "如果解析帮你省下了时间，可以请作者喝杯饮料"
+        title = "赞赏支持",
+        subtitle = "如果本工具对你有价值，你可以在这里直接支持开发与适配更新"
     ) {
         Column(Modifier.fillMaxSize()) {
             Card(
@@ -1043,8 +1487,8 @@ private fun SponsorPage() {
                     }
                     Spacer(Modifier.width(13.dp))
                     Column {
-                        Text("自愿支持，不影响任何功能", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                        Text("软件保持免费使用；赞赏只是对持续维护和适配平台变化的鼓励。", color = Muted, fontSize = 12.sp)
+                        Text("自愿支持，功能不受影响", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                        Text("赞赏只用于持续维护、修复平台适配与问题响应。", color = Muted, fontSize = 12.sp)
                     }
                 }
             }
@@ -1055,16 +1499,16 @@ private fun SponsorPage() {
             ) {
                 SponsorCodeCard(
                     modifier = Modifier.weight(1f),
-                    title = "支付宝",
+                    title = "赞赏码（支付宝）",
                     subtitle = "打开支付宝扫一扫",
-                    resourceName = "donate_alipay.jpg",
+                    resourceName = SPONSOR_IMAGE_ALIPAY,
                     accent = Color(0xFF1677FF)
                 )
                 SponsorCodeCard(
                     modifier = Modifier.weight(1f),
-                    title = "微信赞赏",
+                    title = "赞赏码（微信）",
                     subtitle = "打开微信扫一扫",
-                    resourceName = "donate_wechat.jpg",
+                    resourceName = SPONSOR_IMAGE_WECHAT,
                     accent = Color(0xFFB68A19)
                 )
             }
@@ -1110,7 +1554,7 @@ private fun SponsorCodeCard(
             ) {
                 Image(
                     painter = painter,
-                    contentDescription = "$title 赞赏码",
+                    contentDescription = "$title 赞赏二维码",
                     modifier = Modifier.fillMaxSize().padding(12.dp),
                     contentScale = ContentScale.Fit
                 )
@@ -1275,15 +1719,15 @@ private fun SettingsPage(controller: DesktopAppController) {
                 Spacer(Modifier.height(16.dp))
                 HorizontalDivider(color = Line)
                 Spacer(Modifier.height(14.dp))
-                Text("GitHub 反馈仓库", fontWeight = FontWeight.Medium, fontSize = 13.sp)
-                Text("只填写你自己的仓库；不会把定制版问题提交给原项目", color = Muted, fontSize = 11.sp)
+                Text("反馈仓库（我的项目）", fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                Text("建议填你的维护仓库，问题会直接进入对应项目 Issues", color = Muted, fontSize = 11.sp)
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         githubRepository,
                         { githubRepository = it },
                         Modifier.weight(1f),
-                        placeholder = { Text("https://github.com/用户名/仓库名") },
+                        placeholder = { Text(APP_FEEDBACK_REPO_PLACEHOLDER) },
                         singleLine = true
                     )
                     Spacer(Modifier.width(8.dp))
@@ -1293,8 +1737,8 @@ private fun SettingsPage(controller: DesktopAppController) {
                     }) { Text("保存") }
                     Spacer(Modifier.width(8.dp))
                     Button(onClick = {
-                        if (!controller.openGitHubFeedback()) message = "请先填写并保存你的 GitHub 仓库地址"
-                    }) { Text("提交反馈") }
+                        if (!controller.openGitHubFeedback()) message = "请先填写并保存你的反馈仓库地址"
+                    }) { Text("打开反馈") }
                 }
             }
         }
@@ -1390,6 +1834,53 @@ private fun chooseDirectory(initial: File): File? {
     return if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) chooser.selectedFile else null
 }
 
+private fun chooseLocalFile(title: String, extensions: List<String>): File? {
+    val normalized = extensions.map { it.trim().removePrefix(".").lowercase() }.filter(String::isNotBlank)
+    val chooser = JFileChooser().apply {
+        dialogTitle = title
+        fileSelectionMode = JFileChooser.FILES_ONLY
+        isMultiSelectionEnabled = false
+        isAcceptAllFileFilterUsed = false
+        if (normalized.isNotEmpty()) {
+            fileFilter = FileNameExtensionFilter(
+                normalized.joinToString("、") { it.uppercase() } + " 文件",
+                *normalized.toTypedArray()
+            )
+        }
+    }
+    return if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+        chooser.selectedFile?.takeIf(File::isFile)
+    } else {
+        null
+    }
+}
+
+private fun openWatermarkTool(source: File, media: DesktopMediaController) {
+    runCatching { WatermarkSelectionDialog.show(null, source) }
+        .onSuccess { output ->
+            media.toolMessage = if (output == null) {
+                "已取消图片去水印"
+            } else {
+                "图片去水印完成：${output.absolutePath}"
+            }
+        }
+        .onFailure { error ->
+            media.toolMessage = "图片去水印失败：${error.message ?: "未知错误"}"
+        }
+}
+
+private fun formatDurationDesktop(seconds: Int): String {
+    if (seconds <= 0) return ""
+    val hours = seconds / 3600
+    val minutes = (seconds % 3600) / 60
+    val remainingSeconds = seconds % 60
+    return if (hours > 0) {
+        "%d:%02d:%02d".format(hours, minutes, remainingSeconds)
+    } else {
+        "%d:%02d".format(minutes, remainingSeconds)
+    }
+}
+
 private fun readClipboardText(): String? = runCatching {
     Toolkit.getDefaultToolkit().systemClipboard.getData(DataFlavor.stringFlavor) as? String
 }.getOrNull()?.trim()?.takeIf { it.isNotBlank() }
@@ -1407,6 +1898,17 @@ private fun taskStateName(state: TaskState): String = when (state) {
     TaskState.COMPLETED -> "已完成"
     TaskState.FAILED -> "失败"
     TaskState.CANCELLED -> "已取消"
+}
+
+private fun mediaTaskStateName(state: MediaTaskState): String = when (state) {
+    MediaTaskState.WAITING -> "排队中"
+    MediaTaskState.ANALYZING -> "正在解析"
+    MediaTaskState.DOWNLOADING -> "下载中"
+    MediaTaskState.PAUSED -> "已暂停"
+    MediaTaskState.INTERRUPTED -> "可恢复"
+    MediaTaskState.COMPLETED -> "已完成"
+    MediaTaskState.FAILED -> "失败"
+    MediaTaskState.CANCELLED -> "已取消"
 }
 
 private fun formatSpeed(value: Long): String = if (value <= 0) "" else "${formatBytes(value)}/s"

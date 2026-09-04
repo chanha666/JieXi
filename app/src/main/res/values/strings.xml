@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">解析</string>
+    <string name="notification_channel_downloads">媒体下载</string>
+    <string name="notification_channel_description">显示解析的媒体下载进度与控制按钮</string>
+</resources>

@@ -28,4 +28,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "JieXi"
 
+include(":sharedCore")
+include(":app")
 include(":desktopApp")

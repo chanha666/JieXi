@@ -34,7 +34,7 @@ class DesktopUpdateService(
 
     suspend fun check(): DesktopRelease? = withContext(Dispatchers.IO) {
         if (!configured) return@withContext null
-        val request = Request.Builder().url(config.getProperty("manifestUrl")).header("User-Agent", "JieXi-Desktop/3.1.0").build()
+        val request = Request.Builder().url(config.getProperty("manifestUrl")).header("User-Agent", "JieXi-Desktop/4.0.0").build()
         client.newCall(request).execute().use { response ->
             require(response.isSuccessful) { "更新服务返回 HTTP ${response.code}" }
             parseSignedEnvelope(JSONObject(response.body?.string().orEmpty()), config.getProperty("publicKeyBase64"))
@@ -48,7 +48,7 @@ class DesktopUpdateService(
         require(outputDirectory.isDirectory && outputDirectory.canWrite()) { "更新目录不可写" }
         val finalFile = File(outputDirectory, safeFileName(asset.name))
         val temporary = File(outputDirectory, "${finalFile.name}.part")
-        val request = Request.Builder().url(asset.url).header("User-Agent", "JieXi-Desktop/3.1.0").build()
+        val request = Request.Builder().url(asset.url).header("User-Agent", "JieXi-Desktop/4.0.0").build()
         client.newCall(request).execute().use { response ->
             require(response.isSuccessful) { "下载更新失败：HTTP ${response.code}" }
             response.body?.byteStream()?.use { input -> temporary.outputStream().use(input::copyTo) }

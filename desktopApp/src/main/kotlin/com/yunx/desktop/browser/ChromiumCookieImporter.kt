@@ -29,7 +29,8 @@ class ChromiumCookieImporter(
     private val client: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(2, TimeUnit.SECONDS)
         .readTimeout(4, TimeUnit.SECONDS)
-        .build()
+        .build(),
+    private val profileRoot: File = defaultProfileRoot()
 ) {
     private data class Session(
         val browser: ChromiumBrowser,
@@ -173,10 +174,20 @@ class ChromiumCookieImporter(
         }
     }.getOrNull()
 
-    private fun profileDirectory(browser: ChromiumBrowser): File = File(
-        System.getenv("LOCALAPPDATA") ?: File(System.getProperty("user.home"), "AppData/Local").absolutePath,
-        "YunX Desktop/browser-import/${browser.name.lowercase()}"
-    ).apply { mkdirs() }
+    /**
+     * Dedicated import profiles contain live login cookies. Clearing only the
+     * encrypted app credential is not a logout, so remove these profiles too.
+     * Returns false when a still-open browser keeps files locked.
+     */
+    fun clearLoginData(): Boolean {
+        sessions.clear()
+        return ChromiumBrowser.entries
+            .map { File(profileRoot, it.name.lowercase()) }
+            .all { EmbeddedLoginImporter.deleteOwnedTree(it, profileRoot) }
+    }
+
+    private fun profileDirectory(browser: ChromiumBrowser): File =
+        File(profileRoot, browser.name.lowercase()).apply { mkdirs() }
 
     private fun activePort(profileDirectory: File): Int? = runCatching {
         File(profileDirectory, "DevToolsActivePort").useLines { lines -> lines.firstOrNull()?.trim()?.toInt() }
@@ -199,5 +210,12 @@ class ChromiumCookieImporter(
             )
         }
         return candidates.firstOrNull(File::isFile)
+    }
+
+    companion object {
+        private fun defaultProfileRoot(): File = File(
+            System.getenv("LOCALAPPDATA") ?: File(System.getProperty("user.home"), "AppData/Local").absolutePath,
+            "JieXi Desktop/4.0.0 browser-import"
+        )
     }
 }

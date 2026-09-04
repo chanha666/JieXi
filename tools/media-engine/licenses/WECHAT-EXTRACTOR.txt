@@ -1,0 +1,10 @@
+WeChat Channels public-share extractor
+
+Adapted from yt-dlp pull request #17390:
+https://github.com/yt-dlp/yt-dlp/pull/17390
+
+Source commit:
+d841cddceacbc0bd770c03bbffc94aed7692a08c
+
+The contributor attested that the code is released under the Unlicense.
+Local changes adapt imports for yt-dlp's plugin system and clarify scope.

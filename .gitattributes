@@ -1,0 +1,2 @@
+tools/media-engine/**/*.exe filter=lfs diff=lfs merge=lfs -text
+tools/media-engine/**/*.dll filter=lfs diff=lfs merge=lfs -text

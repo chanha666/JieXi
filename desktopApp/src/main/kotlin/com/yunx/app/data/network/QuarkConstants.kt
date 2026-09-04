@@ -75,7 +75,7 @@ object QuarkConstants {
     const val SHARE_INFO_URL = "$API_BASE/1/clouddrive/share/password?pr=ucpro&fr=pc&uc_param_str="
 
     /** 临时转存目录名 */
-    const val TEMP_DIR_NAME = "YunX临时转存"
+    const val TEMP_DIR_NAME = "解析临时转存"
 
     /** 临时转存子目录前缀（唯一子目录 tr_<时间戳>_<随机>，供启动一次性清理识别） */
     const val TEMP_SUBDIR_PREFIX = "tr_"

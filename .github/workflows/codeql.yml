@@ -31,5 +31,5 @@ jobs:
           build-mode: manual
       - name: Build analyzed source
         shell: pwsh
-        run: .\gradlew.bat --no-daemon :desktopApp:classes
+        run: .\gradlew.bat --no-daemon :sharedCore:test :app:compileDebugKotlin :desktopApp:classes
       - uses: github/codeql-action/analyze@v4

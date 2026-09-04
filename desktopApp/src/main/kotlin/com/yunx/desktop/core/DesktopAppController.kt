@@ -20,8 +20,12 @@ import com.yunx.desktop.update.DesktopUpdateService
 import com.yunx.desktop.util.DesktopLog
 import com.yunx.desktop.system.DiagnosticBundleExporter
 import com.yunx.desktop.system.WindowsPowerGuard
+import com.yunx.desktop.media.DesktopMediaController
+import com.jiexi.core.link.LinkKind
+import com.jiexi.core.link.UnifiedLinkClassifier
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -35,7 +39,7 @@ import java.net.URI
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-enum class AppPage { RESOLVE, DOWNLOADS, LIBRARY, STATUS, ACCOUNTS, SPONSOR, SETTINGS }
+enum class AppPage { RESOLVE, MEDIA, DOWNLOADS, TOOLS, LIBRARY, STATUS, ACCOUNTS, SPONSOR, SETTINGS }
 enum class TaskState { WAITING, PREPARING, DOWNLOADING, PAUSED, RETRY_WAIT, INTERRUPTED, NEEDS_REAUTH, NEEDS_INPUT, VERIFYING, COMPLETED, FAILED, CANCELLED }
 
 class DesktopDownloadTask(
@@ -58,7 +62,9 @@ class DesktopDownloadTask(
     var outputFile by mutableStateOf<File?>(null)
     var priority by mutableStateOf(0)
     var updatedAt by mutableStateOf(System.currentTimeMillis())
-    val downloadKey: Long get() = id.hashCode().toLong() and 0xffffffffL
+    val downloadKey: Long get() = runCatching { UUID.fromString(id) }
+        .map { it.mostSignificantBits xor it.leastSignificantBits }
+        .getOrElse { id.hashCode().toLong() and 0xffffffffL }
 
     fun persisted() = PersistedTask(
         id, fileName, sourceLink, platform, fileId, fileSize, parentId, fidToken, modifyTime,
@@ -97,8 +103,9 @@ class DesktopAppController(
     private val resolver = DesktopResolver(credentialStore)
     private val downloader = DesktopDownloader()
     private val updater = DesktopUpdateService()
+    val media = DesktopMediaController(settings)
     val cookieImporter = ChromiumCookieImporter()
-    private val downloadJobs = ConcurrentHashMap<String, Job>()
+    private val downloadJobs = ActiveDownloadJobs<String>()
     private val taskContexts = ConcurrentHashMap<String, Pair<ResolvedShare, ShareFile>>()
 
     var page by mutableStateOf(AppPage.RESOLVE)
@@ -123,6 +130,10 @@ class DesktopAppController(
     var downloadedUpdate by mutableStateOf<File?>(null)
     val updateConfigured: Boolean get() = updater.configured
     var onTaskNotification: ((String, String) -> Unit)? = null
+        set(value) {
+            field = value
+            media.onTaskNotification = value
+        }
 
     init {
         DesktopLog.d("App", "解析桌面版启动")
@@ -132,11 +143,19 @@ class DesktopAppController(
         history += saved.history.filter { settings.historyRetentionDays > 0 && it.createdAt >= cutoff }
         favorites += saved.favorites
         diagnostics += defaultDiagnostics()
+        media.onActivityChanged = ::updatePowerGuard
         persist()
     }
 
     fun resolve() {
         if (linkText.isBlank() || isResolving) return
+        val classified = UnifiedLinkClassifier.classifyText(linkText).firstOrNull()
+        if (classified != null && classified.kind != LinkKind.CLOUD_SHARE) {
+            media.acceptInput(linkText, autoAnalyze = true)
+            page = AppPage.MEDIA
+            return
+        }
+        if (password.isBlank()) password = classified?.passcode.orEmpty()
         isResolving = true
         resolveError = null
         scope.launch {
@@ -195,10 +214,11 @@ class DesktopAppController(
     }
 
     private fun launchTask(task: DesktopDownloadTask) {
-        if (downloadJobs.containsKey(task.id)) return
+        if (downloadJobs.contains(task.id)) return
         task.state = TaskState.PREPARING; task.updatedAt = System.currentTimeMillis(); persist()
         updatePowerGuard()
-        val job = scope.launch {
+        lateinit var job: Job
+        job = scope.launch(start = CoroutineStart.LAZY) {
             var context: ResolvedShare? = null
             var direct: com.yunx.app.data.network.model.DownloadLink? = null
             try {
@@ -214,11 +234,18 @@ class DesktopAppController(
                 withContext(Dispatchers.Swing) {
                     task.outputFile = output; task.state = TaskState.COMPLETED
                     task.progress = DownloadProgress(output.length(), output.length(), 0, "下载完成"); persist()
+                    if (!downloader.commit(task.downloadKey, output)) {
+                        throw CancellationException("任务已删除，取消提交临时成品")
+                    }
                     if (settings.notifyOnCompletion) onTaskNotification?.invoke("下载完成", task.fileName)
                 }
             } catch (_: CancellationException) {
                 // pause/remove already persisted the final user-selected state
             } catch (error: Throwable) {
+                // Cancelling the underlying OkHttp calls can surface as an IO
+                // failure just before coroutine cancellation is observed. Do
+                // not let that stale failure overwrite PAUSED or a deletion.
+                if (job.isCancelled) return@launch
                 val failure = DesktopFailureClassifier.classify(error)
                 withContext(Dispatchers.Swing) {
                     task.error = friendlyError(error); task.errorCode = failure.first
@@ -238,25 +265,65 @@ class DesktopAppController(
                     withContext(Dispatchers.Swing) { task.state = TaskState.WAITING; persist() }
                 }
             } finally {
+                // download() publishes to a unique public path first, but that
+                // path remains provisional until the COMPLETED state above is
+                // persisted. Pause/failure/cancellation restores only this
+                // task's exact file to its hidden resumable path.
+                downloader.rollbackProvisional(task.downloadKey)
                 direct?.let { link -> context?.let { runCatching { resolver.cleanup(it, link) } } }
-                taskContexts.remove(task.id); downloadJobs.remove(task.id)
-                withContext(Dispatchers.Swing) { updatePowerGuard(); schedule() }
+                // A cancelled generation remains registered until this point.
+                // Only that exact Job may clear the slot; an older generation
+                // must never erase a replacement registered for the same task.
+                if (downloadJobs.finish(task.id, job)) {
+                    taskContexts.remove(task.id)
+                    withContext(Dispatchers.Swing) { updatePowerGuard(); schedule() }
+                }
             }
         }
-        downloadJobs[task.id] = job
+        if (downloadJobs.register(task.id, job)) {
+            job.start()
+        } else {
+            job.cancel(CancellationException("任务已有活动下载"))
+        }
     }
 
     fun pauseDownload(task: DesktopDownloadTask) {
-        downloader.cancel(task.downloadKey); downloadJobs.remove(task.id)?.cancel(); task.state = TaskState.PAUSED; persist(); schedule()
+        downloader.cancel(task.downloadKey)
+        // Keep the cancelled job registered until its finally block finishes.
+        // An immediate resume stays WAITING and is scheduled only afterwards.
+        downloadJobs.cancel(task.id)
+        task.state = TaskState.PAUSED
+        persist()
+        schedule()
     }
     fun resumeDownload(task: DesktopDownloadTask) { if (task.state != TaskState.COMPLETED) { task.state = TaskState.WAITING; task.error = null; task.retryCount = 0; persist(); schedule() } }
     fun retryDownload(task: DesktopDownloadTask) = resumeDownload(task)
-    fun pauseAll() = downloads.filter { it.state in setOf(TaskState.WAITING, TaskState.PREPARING, TaskState.DOWNLOADING, TaskState.RETRY_WAIT) }.forEach(::pauseDownload)
-    fun resumeAll() { downloads.filter { it.state in setOf(TaskState.PAUSED, TaskState.INTERRUPTED, TaskState.FAILED, TaskState.RETRY_WAIT) }.forEach { it.state = TaskState.WAITING }; persist(); schedule() }
+    fun pauseAll() {
+        downloads.filter { it.state in setOf(TaskState.WAITING, TaskState.PREPARING, TaskState.DOWNLOADING, TaskState.RETRY_WAIT) }.forEach(::pauseDownload)
+        media.pauseAll()
+    }
+    fun resumeAll() {
+        downloads.filter { it.state in setOf(TaskState.PAUSED, TaskState.INTERRUPTED, TaskState.FAILED, TaskState.RETRY_WAIT) }.forEach { it.state = TaskState.WAITING }
+        media.resumeAll()
+        persist()
+        schedule()
+    }
     fun setPriority(task: DesktopDownloadTask, high: Boolean) { task.priority = if (high) 50 else 0; persist(); schedule() }
 
     fun removeDownload(task: DesktopDownloadTask) {
-        downloader.cancel(task.downloadKey); downloadJobs.remove(task.id)?.cancel(CancellationException("任务已删除")); downloads.remove(task); taskContexts.remove(task.id); persist(); schedule()
+        // Tombstone first: if final move has already happened, a concurrently
+        // queued completion block can no longer commit the provisional file.
+        downloader.beginDiscard(task.downloadKey)
+        downloader.cancel(task.downloadKey)
+        val active = downloadJobs.cancel(task.id, CancellationException("任务已删除"))
+        downloads.remove(task)
+        taskContexts.remove(task.id)
+        persist()
+        schedule()
+        scope.launch(Dispatchers.IO) {
+            active?.join()
+            downloader.discard(task.downloadKey, File(downloadDirectory), task.fileName)
+        }
     }
 
     fun addFavoriteCurrent() {
@@ -378,7 +445,7 @@ class DesktopAppController(
     private fun persist() = stateStore.save(DesktopStateStore.State(downloads.map { it.persisted() }, history.toList(), favorites.toList()))
     private fun trimHistory() { val max = 500; while (history.size > max) history.removeLast() }
     private fun updatePowerGuard() = WindowsPowerGuard.setDownloading(
-        settings.preventSleepWhileDownloading && downloadJobs.isNotEmpty()
+        settings.preventSleepWhileDownloading && (downloadJobs.isNotEmpty || media.hasActiveTasks)
     )
     private fun publicLink(value: String): String = Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE).find(value)?.value?.substringBefore('?') ?: value.substringBefore('?').trim()
     private fun friendlyError(error: Throwable): String = generateSequence(error) { it.cause }.mapNotNull(Throwable::message).firstOrNull(String::isNotBlank) ?: error.javaClass.simpleName
@@ -393,7 +460,7 @@ class DesktopAppController(
     )
     private fun account(key: CredentialKey) = if (credentialStore.has(key)) "待验证" else "未配置"
 
-    companion object { const val APP_VERSION = "3.1.0" }
+    companion object { const val APP_VERSION = "4.0.0" }
 }
 
 private object DesktopFailureClassifier {

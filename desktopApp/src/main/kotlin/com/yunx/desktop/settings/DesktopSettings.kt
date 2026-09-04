@@ -115,9 +115,9 @@ class DesktopSettings(
         get() = preferences.getInt("history_retention_days", 30).coerceIn(0, 365)
         set(value) { preferences.putInt("history_retention_days", value.coerceIn(0, 365)); preferences.flush() }
 
-    /** 用户自己的 GitHub 仓库，用于问题反馈；留空时不跳到原版项目。 */
+    /** 用户自己的 GitHub 仓库，用于问题反馈；未手动设置时使用默认仓库。 */
     var githubRepositoryUrl: String
-        get() = preferences.get("github_repository_url", "").trim()
+        get() = preferences.get("github_repository_url", DEFAULT_FEEDBACK_REPO).trim()
         set(value) {
             preferences.put("github_repository_url", normalizeGitHubRepository(value))
             preferences.flush()
@@ -132,6 +132,7 @@ class DesktopSettings(
     }
 
     companion object {
+        private const val DEFAULT_FEEDBACK_REPO = "https://github.com/chanha666/JieXi"
         fun normalizeGitHubRepository(value: String): String {
             val trimmed = value.trim().removeSuffix("/").removeSuffix(".git")
             if (trimmed.isBlank()) return ""

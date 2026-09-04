@@ -1,11 +1,12 @@
-# Windows 桌面构建输出
+# Windows / Android 构建输出
 /build/
 /.idea/
-/app/
+/app/build/
 /.kotlin/
 /desktopApp/build/
+/sharedCore/build/
 *.class
-bin/
+/bin/
 gen/
 out/
 
@@ -15,10 +16,21 @@ gradle-app.setting
 !gradle-wrapper.jar
 local.properties
 workspace.json
+.firecrawl/
 tools/wix311-binaries.zip
 tools/wix311/
 desktopApp/browserHelper/bin/
 desktopApp/browserHelper/obj/
 desktopApp/browserHelper/publish/
 desktopApp/browserHelper/publish-net48/
+desktopApp/browserHelper/publish-net48-x64/
 /debug.keystore
+
+# 发布密钥与签名旁车文件只能保存在仓库外部。
+release.properties
+*.jks
+*.keystore
+*.pem
+*.p12
+*.pfx
+*.idsig
