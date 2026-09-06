@@ -41,21 +41,42 @@ internal object DesktopMediaWorkspace {
         require(Files.isRegularFile(candidate, LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(candidate)) {
             "媒体核心没有返回有效的成品文件。"
         }
+        require(root.toRealPath() == root && candidate.toRealPath().startsWith(root)) {
+            "媒体成品路径包含目录跳转，已停止处理。"
+        }
         return candidate.toFile()
     }
 
-    fun newestOwnedOutput(taskDirectory: File, since: Long): File? {
+    fun resolveCompletedOutput(taskDirectory: File, reportedPath: String, outputFormat: String, since: Long): File {
+        if (reportedPath.isNotBlank()) {
+            val reported = runCatching {
+                val path = File(reportedPath)
+                requireOwnedOutput(taskDirectory, if (path.isAbsolute) path else File(taskDirectory, reportedPath))
+            }.getOrNull()
+            if (reported != null && isCompletedMedia(reported, outputFormat)) return reported
+        }
+        return singleOwnedOutput(taskDirectory, outputFormat, since)
+            ?: error("下载已结束，但无法唯一确认本任务的成品文件；本地文件已保留。")
+    }
+
+    private fun isCompletedMedia(file: File, outputFormat: String): Boolean {
+        val extensions = if (outputFormat == "mp3") setOf("mp3") else setOf("mp4", "mkv", "webm", "mov", "m4v")
+        return file.length() > 0 && file.extension.lowercase() in extensions &&
+            !Regex("\\.(?:f\\d+|temp|part|ytdl)(?:\\.|$)", RegexOption.IGNORE_CASE).containsMatchIn(file.name)
+    }
+
+    fun singleOwnedOutput(taskDirectory: File, outputFormat: String, since: Long): File? {
         val root = taskDirectory.toPath().toAbsolutePath().normalize()
         if (!Files.isDirectory(root, LinkOption.NOFOLLOW_LINKS)) return null
         return Files.walk(root).use { paths ->
-            paths.filter { path ->
+            val candidates = paths.filter { path ->
                 Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS) &&
                     !Files.isSymbolicLink(path) &&
-                    !path.fileName.toString().endsWith(".part", ignoreCase = true) &&
+                    isCompletedMedia(path.toFile(), outputFormat) &&
+                    runCatching { requireOwnedOutput(taskDirectory, path.toFile()) }.isSuccess &&
                     Files.getLastModifiedTime(path, LinkOption.NOFOLLOW_LINKS).toMillis() >= since - 5_000L
-            }.max(Comparator.comparingLong { path ->
-                Files.getLastModifiedTime(path, LinkOption.NOFOLLOW_LINKS).toMillis()
-            }).orElse(null)?.toFile()
+            }.limit(2).toList()
+            candidates.singleOrNull()?.toFile()
         }
     }
 

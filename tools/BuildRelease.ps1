@@ -1,5 +1,5 @@
 param(
-    [string]$Version = '4.1.0',
+    [string]$Version = '4.1.1',
     [string]$BuildRoot = "D:\CodexBuilds\JieXi",
     [string]$Repository = 'chanha666/JieXi'
 )

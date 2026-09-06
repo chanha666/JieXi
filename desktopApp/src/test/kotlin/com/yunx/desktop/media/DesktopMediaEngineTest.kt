@@ -354,7 +354,7 @@ class DesktopMediaEngineTest {
             val task = DesktopMediaTask(
                 sourceUrl = preview.sourceUrl,
                 downloadUrl = preview.downloadUrl,
-                title = "direct-download",
+                title = "公开视频 #测试 100% [作品]",
                 platform = preview.platform,
                 formatSelector = "best",
                 formatLabel = "原始文件",
@@ -362,14 +362,19 @@ class DesktopMediaEngineTest {
                 embedSubtitles = false
             )
 
-            process = engine.startDownload(task, directory.toFile(), concurrentFragments = 64)
+            val workspace = directory.resolve("中文 下载目录").toFile()
+            process = engine.startDownload(task, workspace, concurrentFragments = 64)
             val output = CompletableFuture.supplyAsync {
                 process.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
             }
             assertTrue(process.waitFor(30, TimeUnit.SECONDS), "yt-dlp did not finish in time")
             assertEquals(0, process.exitValue(), output.get(5, TimeUnit.SECONDS))
-            val downloaded = directory.toFile().listFiles().orEmpty().single { it.extension.equals("mp4", true) }
+            val downloaded = workspace.listFiles().orEmpty().single { it.extension.equals("mp4", true) }
             assertContentEquals(content, downloaded.readBytes())
+            val reported = output.get(5, TimeUnit.SECONDS).lineSequence()
+                .first { it.startsWith("[finished]") }.removePrefix("[finished]").trim()
+            assertEquals(downloaded.absolutePath, reported)
+            assertEquals(downloaded.canonicalFile, DesktopMediaWorkspace.requireOwnedOutput(workspace, File(reported)).canonicalFile)
             assertFalse(directory.toFile().walk().any { it.name.endsWith(".part") })
         } finally {
             process?.takeIf(Process::isAlive)?.destroyForcibly()

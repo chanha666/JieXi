@@ -23,8 +23,8 @@ android {
         applicationId = "com.yunx.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 41
-        versionName = "4.1.0"
+        versionCode = 42
+        versionName = "4.1.1"
 
         buildConfigField("String", "UPDATE_MANIFEST_URL", buildConfigString(releaseProperties.getProperty("updateManifestUrl", "")))
         buildConfigField("String", "UPDATE_PUBLIC_KEY", buildConfigString(releaseProperties.getProperty("updatePublicKeyBase64", "")))

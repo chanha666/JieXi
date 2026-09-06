@@ -154,6 +154,8 @@ class DesktopMediaEngine(
             else -> "%(title).160B [%(id)s].%(ext)s"
         }
         val args = mutableListOf(
+            "--ignore-config",
+            "--encoding", "utf-8",
             "--newline",
             "--color", "never",
             "--continue",
@@ -636,6 +638,7 @@ class DesktopMediaEngine(
             .filter(String::isNotBlank).joinToString(File.pathSeparator)
         builder.environment()["PATH"] = path
         builder.environment()["PYTHONUTF8"] = "1"
+        builder.environment()["PYTHONIOENCODING"] = "utf-8"
         builder.environment()["NO_COLOR"] = "1"
         return builder
     }

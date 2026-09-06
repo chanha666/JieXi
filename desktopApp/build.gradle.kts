@@ -20,7 +20,7 @@ val windowsPackageName = providers.environmentVariable("JIEXI_PACKAGE_NAME")
     .orElse("解析")
     .get()
 
-val windowsPackageVersion = "4.1.0"
+val windowsPackageVersion = "4.1.1"
 val mediaEngineSourceDir = rootProject.layout.projectDirectory.dir("tools/media-engine")
 val requiredMediaEngineFiles = listOf(
     "yt-dlp.exe",

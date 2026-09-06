@@ -97,6 +97,42 @@ class DesktopMediaWorkspaceTest {
         }
     }
 
+    @Test
+    fun `garbled reported path recovers only the unique task media not sidecars`() = withTemporaryDirectory { download ->
+        val workspace = DesktopMediaWorkspace.taskDirectory(download, UUID.randomUUID().toString()).apply { mkdirs() }
+        val media = File(workspace, "中文 视频.mp4").apply { writeText("video") }
+        listOf("cover.jpg", "subtitles.srt", "info.json", "split.f137.mp4", "pending.mp4.part", "clip.temp.mp4")
+            .forEach { File(workspace, it).writeText("not finished media") }
+        assertEquals(media, DesktopMediaWorkspace.resolveCompletedOutput(workspace, "D:/乱码/视频.mp4", "mp4", 0))
+        assertEquals(media, DesktopMediaWorkspace.resolveCompletedOutput(workspace, media.name, "mp4", 0))
+    }
+
+    @Test
+    fun `outside file is never adopted and ambiguous media are retained`() = withTemporaryDirectory { download ->
+        val workspace = DesktopMediaWorkspace.taskDirectory(download, UUID.randomUUID().toString()).apply { mkdirs() }
+        val outside = File(download, "outside.mp4").apply { writeText("private video") }
+        assertFailsWith<IllegalStateException> {
+            DesktopMediaWorkspace.resolveCompletedOutput(workspace, outside.absolutePath, "mp4", 0)
+        }
+        val one = File(workspace, "one.mp4").apply { writeText("one") }
+        val two = File(workspace, "two.mp4").apply { writeText("two") }
+        assertFailsWith<IllegalStateException> {
+            DesktopMediaWorkspace.resolveCompletedOutput(workspace, "../outside.mp4", "mp4", 0)
+        }
+        assertTrue(outside.isFile && one.isFile && two.isFile)
+    }
+
+    @Test
+    fun `empty media and stale output cannot count as a completion`() = withTemporaryDirectory { download ->
+        val workspace = DesktopMediaWorkspace.taskDirectory(download, UUID.randomUUID().toString()).apply { mkdirs() }
+        File(workspace, "empty.mp4").writeText("")
+        val stale = File(workspace, "stale.mp4").apply { writeText("old"); setLastModified(1_000L) }
+        assertFailsWith<IllegalStateException> {
+            DesktopMediaWorkspace.resolveCompletedOutput(workspace, "", "mp4", System.currentTimeMillis())
+        }
+        assertTrue(stale.isFile)
+    }
+
     private fun mediaTask() = DesktopMediaTask(
         sourceUrl = "https://example.invalid/video",
         downloadUrl = "",

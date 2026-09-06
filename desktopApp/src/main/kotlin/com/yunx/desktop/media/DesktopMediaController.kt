@@ -177,7 +177,8 @@ class DesktopMediaController(
         if (task.state == MediaTaskState.COMPLETED) return
         task.state = MediaTaskState.WAITING
         task.stage = "等待中"
-        task.error = null
+        // Preserve the previous failure until runTask can recover an already
+        // downloaded file without contacting the source again.
         requestedActions.remove(task.id)
         persist()
         schedule()
@@ -297,6 +298,7 @@ class DesktopMediaController(
     }
 
     private suspend fun runTask(task: DesktopMediaTask) {
+        val recoverPathFailure = task.error == "媒体核心返回了工作目录之外的文件。"
         if(settings.wifiOnly && !WindowsWifiConnection.isConnected()) {
             withContext(Dispatchers.Swing) { task.state = MediaTaskState.PAUSED; task.stage = "等待 Wi-Fi，连接后点击继续"; persist() }
             return
@@ -324,44 +326,57 @@ class DesktopMediaController(
         var deleteWorkspaceAfterExit = false
         val workDirectory = DesktopMediaWorkspace.taskDirectory(downloadRoot, task.id)
         try {
-            process = engine.startDownload(task, workDirectory, settings.threadCount.coerceIn(1, 64), settings.retryLimit, settings.mediaNameRule, settings.speedLimitBytes)
-            processes[task.id] = process
-            if (requestedActions.containsKey(task.id) || removals.isRemoved(task.id)) terminateProcess(process)
-            process.inputStream.bufferedReader(Charsets.UTF_8).useLines { output ->
-                output.forEach { raw ->
-                    val line = raw.trim()
-                    if (line.isNotBlank()) {
-                        if (lines.size >= 80) lines.removeFirst()
-                        lines.addLast(line)
-                    }
-                    when {
-                        line.startsWith("[progress]") -> {
-                            val fields = line.removePrefix("[progress]").trim().split('|')
-                            val percent = Regex("(\\d+(?:\\.\\d+)?)%").find(fields.getOrElse(0) { "" })
-                                ?.groupValues?.getOrNull(1)?.toDoubleOrNull()?.roundToInt()?.coerceIn(0, 99) ?: 0
-                            val speed = fields.getOrElse(1) { "" }.trim().takeUnless { it == "NA" }.orEmpty()
-                            val eta = fields.getOrElse(2) { "" }.trim().takeUnless { it == "NA" }.orEmpty()
-                            javax.swing.SwingUtilities.invokeLater {
-                                task.progress = percent
-                                task.speed = speed
-                                task.eta = eta
-                                task.stage = if (percent > 0) "正在下载" else "正在获取媒体流"
-                                task.updatedAt = System.currentTimeMillis()
-                                persistThrottled()
+            val recovered = if (recoverPathFailure) {
+                DesktopMediaWorkspace.singleOwnedOutput(workDirectory, task.outputFormat, task.createdAt)
+                    ?.takeIf { file ->
+                        runCatching {
+                            val probe = JSONObject(engine.runFfprobe(listOf("-v", "error", "-show_streams", "-of", "json", file.absolutePath), 30))
+                            val streams = probe.getJSONArray("streams")
+                            (0 until streams.length()).any { index ->
+                                streams.getJSONObject(index).optString("codec_type") == if (task.outputFormat == "mp3") "audio" else "video"
                             }
+                        }.getOrDefault(false)
+                    }
+            } else null
+            if (recovered == null) {
+                process = engine.startDownload(task, workDirectory, settings.threadCount.coerceIn(1, 64), settings.retryLimit, settings.mediaNameRule, settings.speedLimitBytes)
+                processes[task.id] = process
+                if (requestedActions.containsKey(task.id) || removals.isRemoved(task.id)) terminateProcess(process)
+                process.inputStream.bufferedReader(Charsets.UTF_8).useLines { output ->
+                    output.forEach { raw ->
+                        val line = raw.trim()
+                        if (line.isNotBlank()) {
+                            if (lines.size >= 80) lines.removeFirst()
+                            lines.addLast(line)
                         }
-                        line.startsWith("[finished]") -> finishedPath = line.removePrefix("[finished]").trim()
+                        when {
+                            line.startsWith("[progress]") -> {
+                                val fields = line.removePrefix("[progress]").trim().split('|')
+                                val percent = Regex("(\\d+(?:\\.\\d+)?)%").find(fields.getOrElse(0) { "" })
+                                    ?.groupValues?.getOrNull(1)?.toDoubleOrNull()?.roundToInt()?.coerceIn(0, 99) ?: 0
+                                val speed = fields.getOrElse(1) { "" }.trim().takeUnless { it == "NA" }.orEmpty()
+                                val eta = fields.getOrElse(2) { "" }.trim().takeUnless { it == "NA" }.orEmpty()
+                                javax.swing.SwingUtilities.invokeLater {
+                                    task.progress = percent
+                                    task.speed = speed
+                                    task.eta = eta
+                                    task.stage = if (percent > 0) "正在下载" else "正在获取媒体流"
+                                    task.updatedAt = System.currentTimeMillis()
+                                    persistThrottled()
+                                }
+                            }
+                            line.startsWith("[finished]") -> finishedPath = line.removePrefix("[finished]").trim()
+                        }
                     }
                 }
             }
-            val exitCode = process.waitFor()
+            val exitCode = process?.waitFor() ?: 0
             val action = requestedActions.remove(task.id)
             deleteWorkspaceAfterExit = removals.isRemoved(task.id)
             val workspaceOutput = if (action == null && exitCode == 0 && !deleteWorkspaceAfterExit) {
-                finishedPath.takeIf(String::isNotBlank)?.let(::File)
-                    ?.let { DesktopMediaWorkspace.requireOwnedOutput(workDirectory, it) }
-                    ?: DesktopMediaWorkspace.newestOwnedOutput(workDirectory, task.createdAt)
-                    ?: error("下载结束但没有找到成品文件。")
+                recovered ?: DesktopMediaWorkspace.resolveCompletedOutput(
+                    workDirectory, finishedPath, task.outputFormat, task.createdAt
+                )
             } else {
                 null
             }
