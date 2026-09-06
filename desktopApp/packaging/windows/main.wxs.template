@@ -73,7 +73,7 @@
     <?endif?>
     <CustomAction
       Id="JieXiBlockUnsupportedLegacy"
-      Error="检测到解析 3.0.x。为避免任务、历史和收藏数据损坏，本安装包不会覆盖旧版。请先备份旧版数据，在 Windows 设置中卸载旧版，再全新安装 4.0.0。当前旧版和数据均未被修改。" />
+      Error="检测到解析 3.0.x。为避免任务、历史和收藏数据损坏，本安装包不会覆盖旧版。请先备份旧版数据，在 Windows 设置中卸载旧版，再全新安装 @PACKAGE_VERSION@。当前旧版和数据均未被修改。" />
 
     <!--
       jpackage 17 recursively removes INSTALLDIR during a major upgrade. Versions

@@ -292,6 +292,7 @@ val generateInstallerResources by tasks.registering {
     description = "Generate the WiX template with the freshly built embedded migration helper."
     inputs.file(installerResourceTemplate)
     inputs.file(installerHelperExecutable)
+    inputs.property("windowsPackageVersion", windowsPackageVersion)
     outputs.file(generatedInstallerMainWxs)
     doLast {
         val escapedHelperPath = installerHelperExecutable.absolutePath
@@ -305,7 +306,8 @@ val generateInstallerResources by tasks.registering {
         }
         installerResourceDir.mkdirs()
         generatedInstallerMainWxs.writeText(
-            template.replace("@PRESERVE_HELPER_PATH@", escapedHelperPath),
+            template.replace("@PRESERVE_HELPER_PATH@", escapedHelperPath)
+                .replace("@PACKAGE_VERSION@", windowsPackageVersion),
             Charsets.UTF_8
         )
     }
