@@ -1,5 +1,5 @@
 param(
-    [string]$Version = '4.1.1',
+    [string]$Version = ((Get-Content -LiteralPath (Join-Path $PSScriptRoot '../version.properties') -Raw | ConvertFrom-StringData).versionName),
     [string]$BuildRoot = "D:\CodexBuilds\JieXi",
     [string]$Repository = 'chanha666/JieXi'
 )
@@ -17,6 +17,8 @@ $releaseAndroidApk = Join-Path $releaseDirectory "JieXi-$Version-Android.apk"
 $checksumsPath = Join-Path $releaseDirectory 'SHA256SUMS.txt'
 $buildInfoPath = Join-Path $releaseDirectory 'BUILD-INFO.txt'
 $manifestPath = Join-Path $repoRoot 'update-manifest.json'
+$declaredVersion = (Get-Content -LiteralPath (Join-Path $repoRoot 'version.properties') -Raw | ConvertFrom-StringData).versionName
+if ($Version -ne $declaredVersion) { throw "请求版本 $Version 与统一构建版本 $declaredVersion 不一致。" }
 
 if ($Version -notmatch '^\d+\.\d+\.\d+$') {
     throw "版本号格式错误：$Version"

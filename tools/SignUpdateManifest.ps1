@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)][string]$ReleaseDirectory,
-    [string]$Version = '4.1.1',
+    [string]$Version = ((Get-Content -LiteralPath (Join-Path $PSScriptRoot '../version.properties') -Raw | ConvertFrom-StringData).versionName),
     [string]$Repository = 'chanha666/JieXi',
     [string]$PrivateKeyPath = 'D:\CodexSecrets\解析\update-private-key.pem',
     [string]$OutputPath = (Join-Path $ReleaseDirectory 'update-manifest.json')
@@ -25,7 +25,7 @@ $assets = foreach ($name in $assetNames) {
 
 $payloadObject = [ordered]@{
     tag_name = "v$Version"
-    body = "解析 ${Version}：修复 Windows 中文下载路径乱码导致成品误报失败。旧任务点重试可安全确认已有成品，无需重新下载。`nJieXi ${Version}: fixes Windows UTF-8 completion paths and safely recovers verified local files on retry."
+    body = "解析 ${Version}：统一版本号，修复重复提示更新；更新支持系统/软件代理、下载进度、断点续传和退出安装，兼容 Windows 短路径。`nJieXi ${Version}: unified versioning, proxy-aware resumable updates, progress reporting, exit-to-install and Windows short-path compatibility."
     published_at = [DateTimeOffset]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
     assets = @($assets)
 }

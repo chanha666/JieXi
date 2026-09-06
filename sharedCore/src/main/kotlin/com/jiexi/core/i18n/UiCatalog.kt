@@ -3,6 +3,7 @@ package com.jiexi.core.i18n
 /** Shared, offline UI catalog. Keys are explicit Chinese source templates. */
 internal object UiCatalog {
     val english = mapOf(
+        "退出并安装" to "Exit and install",
         "原始文件 · 无转码" to "Original file · No transcoding",
         "公开最高画质（源站提供时可到 8K）" to "Best public quality (up to 8K when available)",
         "最高 4K" to "Up to 4K",
@@ -734,6 +735,7 @@ internal object UiCatalog {
         "预览与选择画质" to "Preview and choose quality"
     )
     val traditional = mapOf(
+        "退出并安装" to "退出並安裝",
         "原始文件 · 无转码" to "原始檔案 · 無轉碼",
         "公开最高画质（源站提供时可到 8K）" to "公開最高畫質（來源提供時可到 8K）",
         "最高 4K" to "最高 4K",

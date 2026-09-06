@@ -56,6 +56,17 @@ jobs:
         shell: pwsh
         run: .\gradlew.bat --no-daemon :desktopApp:packagePortable
 
+      - name: Upload Windows test reports even on failure
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: JieXi-Windows-Test-Reports-${{ github.sha }}
+          path: |
+            desktopApp/build/test-results/test
+            desktopApp/build/reports/tests/test
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Create portable archive and checksum
         shell: pwsh
         run: |

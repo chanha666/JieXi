@@ -41,7 +41,9 @@ internal object DesktopMediaWorkspace {
         require(Files.isRegularFile(candidate, LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(candidate)) {
             "媒体核心没有返回有效的成品文件。"
         }
-        require(root.toRealPath() == root && candidate.toRealPath().startsWith(root)) {
+        // Windows CI and user TEMP paths may use 8.3 aliases (RUNNER~1).
+        // Compare real locations, not the spelling of the trusted root.
+        require(!Files.isSymbolicLink(root) && candidate.toRealPath().startsWith(root.toRealPath())) {
             "媒体成品路径包含目录跳转，已停止处理。"
         }
         return candidate.toFile()
@@ -68,7 +70,7 @@ internal object DesktopMediaWorkspace {
     fun singleOwnedOutput(taskDirectory: File, outputFormat: String, since: Long): File? {
         val root = taskDirectory.toPath().toAbsolutePath().normalize()
         if (!Files.isDirectory(root, LinkOption.NOFOLLOW_LINKS)) return null
-        return Files.walk(root).use { paths ->
+        return Files.list(root).use { paths ->
             val candidates = paths.filter { path ->
                 Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS) &&
                     !Files.isSymbolicLink(path) &&

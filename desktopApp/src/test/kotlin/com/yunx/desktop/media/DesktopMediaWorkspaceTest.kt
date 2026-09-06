@@ -133,6 +133,18 @@ class DesktopMediaWorkspaceTest {
         assertTrue(stale.isFile)
     }
 
+    @Test
+    fun `Windows short path aliases do not fail real path containment`() = withTemporaryDirectory { download ->
+        org.junit.Assume.assumeTrue(System.getProperty("os.name").startsWith("Windows", true))
+        val buffer = CharArray(32768)
+        val count = com.sun.jna.platform.win32.Kernel32.INSTANCE.GetShortPathName(download.absolutePath, buffer, buffer.size)
+        assertTrue(count > 0)
+        val shortRoot = File(String(buffer, 0, count))
+        val workspace = DesktopMediaWorkspace.taskDirectory(shortRoot, UUID.randomUUID().toString()).apply { mkdirs() }
+        val output = File(workspace, "video.mp4").apply { writeText("owned") }
+        assertEquals(output.canonicalFile, DesktopMediaWorkspace.requireOwnedOutput(workspace, output).canonicalFile)
+    }
+
     private fun mediaTask() = DesktopMediaTask(
         sourceUrl = "https://example.invalid/video",
         downloadUrl = "",

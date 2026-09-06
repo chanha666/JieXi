@@ -23,15 +23,15 @@ Windows：夸克、UC、百度、139 打开软件内官方登录窗口；123 支
 
 正式版本从本仓库的 [Releases](https://github.com/chanha666/JieXi/releases) 下载：
 
-- Windows 安装版：`JieXi-4.1.1-Windows-Setup.exe`
-- Windows 绿色版：`JieXi-4.1.1-Windows-Portable.zip`
-- Android 安装包：`JieXi-4.1.1-Android.apk`
+- Windows 安装版：`JieXi-4.1.2-Windows-Setup.exe`
+- Windows 绿色版：`JieXi-4.1.2-Windows-Portable.zip`
+- Android 安装包：`JieXi-4.1.2-Android.apk`
 - 文件校验：`SHA256SUMS.txt`
 - 构建信息：`BUILD-INFO.txt`
 
 Windows 绿色版解压后双击“解析.exe”，不需要另装 Java、Python、yt-dlp 或 FFmpeg。Android 公开 APK 使用新的 RSA 4096 位发行证书：首次安装以及今后同一发行证书签署的版本可以正常覆盖升级。早期 debug 测试版不属于同一公开发行链；Android 7–12（API 24–32）需要先卸载旧测试版再安装。Android 13 及以上（API 33+）如需保留旧测试版数据，只能使用单独提供的迁移 APK；该迁移包不作为普通公开 Release 附件。
 
-Windows 3.1.0 及以上版本可直接升级到 4.1.1，安装器只迁移三个任务数据文件且不会覆盖已有新数据。3.0.x 及更早版本会被安全阻止；请先备份 `%LOCALAPPDATA%\解析`，在 Windows 设置中卸载旧版，再安装 4.1.1。新版持久数据保存在 `%LOCALAPPDATA%\JieXi\Data`，正常卸载不会删除它。
+Windows 3.1.0 及以上版本可直接升级到 4.1.2，安装器只迁移三个任务数据文件且不会覆盖已有新数据。3.0.x 及更早版本会被安全阻止；请先备份 `%LOCALAPPDATA%\解析`，在 Windows 设置中卸载旧版，再安装 4.1.2。新版持久数据保存在 `%LOCALAPPDATA%\JieXi\Data`，正常卸载不会删除它。
 
 ## 能做什么
 

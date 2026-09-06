@@ -27,9 +27,9 @@ Get official builds from [GitHub Releases](https://github.com/chanha666/JieXi/re
 
 | Platform / file | What to do |
 | --- | --- |
-| `JieXi-4.1.1-Windows-Setup.exe` | Run the installer, then open JieXi from the desktop or Start menu |
-| `JieXi-4.1.1-Windows-Portable.zip` | Extract the entire archive, then run `解析.exe`; keep the bundled `app`, `runtime`, media engine and license folders |
-| `JieXi-4.1.1-Android.apk` | Install the APK using Android's system installer |
+| `JieXi-4.1.2-Windows-Setup.exe` | Run the installer, then open JieXi from the desktop or Start menu |
+| `JieXi-4.1.2-Windows-Portable.zip` | Extract the entire archive, then run `解析.exe`; keep the bundled `app`, `runtime`, media engine and license folders |
+| `JieXi-4.1.2-Android.apk` | Install the APK using Android's system installer |
 | `SHA256SUMS.txt` | Verify downloaded files against their SHA-256 hashes |
 | `BUILD-INFO.txt` | Check the exact source commit used for the build |
 
@@ -37,7 +37,7 @@ Windows packages include Java and the required media components; no separate Pyt
 
 ### Upgrading
 
-- **Windows 3.1.0 or later:** run the 4.1.1 installer. The installer migrates only the three known task-data files and never overwrites existing destination data. An occupied file, conflict or unsafe path stops the upgrade rather than discarding data.
+- **Windows 3.1.0 or later:** run the 4.1.2 installer. The installer migrates only the three known task-data files and never overwrites existing destination data. An occupied file, conflict or unsafe path stops the upgrade rather than discarding data.
 - **Windows 3.0.x or earlier:** direct upgrades are blocked. Back up `%LOCALAPPDATA%\解析` first, uninstall the old application through Windows Settings, and then install the new version. Keep your backup until the new installation is verified.
 - Current Windows task data lives in `%LOCALAPPDATA%\JieXi\Data`, separately from the program installation; normal uninstall does not remove it.
 - **Android public releases:** 4.1 retains the public RSA-4096 release certificate introduced in 4.0. Later builds signed with the same certificate can be installed over it.

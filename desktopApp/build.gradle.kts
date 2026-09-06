@@ -20,7 +20,8 @@ val windowsPackageName = providers.environmentVariable("JIEXI_PACKAGE_NAME")
     .orElse("解析")
     .get()
 
-val windowsPackageVersion = "4.1.1"
+val releaseVersion = Properties().apply { rootProject.file("version.properties").inputStream().use(::load) }
+val windowsPackageVersion = releaseVersion.getProperty("versionName")
 val mediaEngineSourceDir = rootProject.layout.projectDirectory.dir("tools/media-engine")
 val requiredMediaEngineFiles = listOf(
     "yt-dlp.exe",
@@ -110,6 +111,8 @@ val installerResourceDir = layout.buildDirectory.dir("generated/installer-resour
 val mediaEngineManifestFile = layout.buildDirectory.file("generated/media-engine/MANIFEST.sha256")
 
 tasks.processResources {
+    inputs.property("appVersion", windowsPackageVersion)
+    filesMatching("app-version.properties") { expand("appVersion" to windowsPackageVersion) }
     filesMatching("update.properties") {
         expand(
             "manifestUrl" to desktopReleaseProperties.getProperty("updateManifestUrl", ""),
@@ -137,6 +140,7 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("com.squareup.okhttp3:okhttp-tls:4.12.0")
 }
 
 compose.desktop {
@@ -164,6 +168,7 @@ compose.desktop {
 
 tasks.test {
     useJUnit()
+    systemProperty("jiexi.test.expectedVersion", windowsPackageVersion)
 }
 
 // Development runs use the source-controlled engine directly. Packaged runs

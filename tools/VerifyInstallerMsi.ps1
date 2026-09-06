@@ -1,5 +1,5 @@
 param(
-    [string]$Version = '4.1.1',
+    [string]$Version = ((Get-Content -LiteralPath (Join-Path $PSScriptRoot '../version.properties') -Raw | ConvertFrom-StringData).versionName),
     [string]$BuildRoot = 'D:\CodexBuilds\JieXi'
 )
 

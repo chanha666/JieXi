@@ -114,7 +114,7 @@ class DesktopAppController(
     private val configuredNetwork = HttpClients.configure(settings.networkProxyConfig())
     private val resolver = DesktopResolver(credentialStore)
     private val downloader = DesktopDownloader()
-    private val updater = DesktopUpdateService()
+    private val updater = DesktopUpdateService(proxyConfig = settings::networkProxyConfig)
     val media = DesktopMediaController(settings, storeFile = mediaStoreFile)
     val cookieImporter = ChromiumCookieImporter()
     private val downloadJobs = ActiveDownloadJobs<String>()
@@ -500,7 +500,10 @@ class DesktopAppController(
                 .onSuccess { release -> withContext(Dispatchers.Swing) {
                     updateChecking = false
                     if (release == null) updateMessage = "未获取到更新信息"
-                    else if (DesktopUpdateService.compareVersions(release.version, APP_VERSION) > 0) updateRelease = release
+                    else if (DesktopUpdateService.compareVersions(release.version, APP_VERSION) > 0) {
+                        downloadedUpdate = null
+                        updateRelease = release
+                    }
                     else updateMessage = "当前已是最新版本"
                 }}
                 .onFailure { error ->
@@ -517,7 +520,13 @@ class DesktopAppController(
         updateDownloading = true
         updateMessage = "正在下载并校验更新包…"
         scope.launch {
-            runCatching { updater.download(asset, File(settings.downloadDirectory, "更新")) }
+            runCatching {
+                updater.download(asset, File(settings.downloadDirectory, "更新")) { bytes, total ->
+                    val amount = "%.1f".format(java.util.Locale.ROOT, bytes / 1048576.0)
+                    val progress = if (total > 0) "${(bytes * 100 / total).coerceIn(0, 100)}% · $amount MB" else "$amount MB"
+                    javax.swing.SwingUtilities.invokeLater { if (updateDownloading) updateMessage = "正在下载更新：$progress" }
+                }
+            }
                 .onSuccess { file -> withContext(Dispatchers.Swing) {
                     updateDownloading = false; downloadedUpdate = file
                     updateMessage = "更新包已通过 SHA-256 校验"
@@ -530,6 +539,33 @@ class DesktopAppController(
     }
 
     fun dismissUpdate() { updateRelease = null }
+    private fun updateBlockedByTasks(): Boolean = downloadJobs.isNotEmpty || media.hasActiveTasks || media.toolBusy ||
+        downloads.any { it.state in setOf(TaskState.WAITING, TaskState.PREPARING, TaskState.DOWNLOADING, TaskState.RETRY_WAIT, TaskState.VERIFYING) }
+
+    fun installUpdate(onReady: (File) -> Unit) {
+        if (updateBlockedByTasks()) {
+            updateMessage = "请先暂停或完成下载和媒体处理，再退出安装更新。"
+            return
+        }
+        val file = downloadedUpdate ?: return
+        val asset = updateRelease?.let(DesktopUpdateService::windowsInstaller) ?: return
+        updateDownloading = true
+        scope.launch {
+            val verified = runCatching { DesktopUpdateService.verifiedFile(asset, file) }.getOrDefault(false)
+            withContext(Dispatchers.Swing) {
+                updateDownloading = false
+                if (!verified) {
+                    downloadedUpdate = null
+                    updateMessage = "更新包已变动，请重新下载并校验。"
+                } else if (updateBlockedByTasks()) {
+                    updateMessage = "请先暂停或完成下载和媒体处理，再退出安装更新。"
+                } else {
+                    persist()
+                    onReady(file)
+                }
+            }
+        }
+    }
     fun saveGitHubRepository(url: String) { settings.githubRepositoryUrl = url }
     fun openGitHubFeedback(): Boolean {
         val url = settings.githubIssuesUrl() ?: updater.defaultFeedbackUrl ?: return false
@@ -604,7 +640,7 @@ class DesktopAppController(
     )
     private fun account(key: CredentialKey) = if (credentialStore.has(key)) "待验证" else "未配置"
 
-    companion object { const val APP_VERSION = "4.1.0" }
+    companion object { val APP_VERSION: String get() = DesktopBuildInfo.version }
 }
 
 private object DesktopFailureClassifier {

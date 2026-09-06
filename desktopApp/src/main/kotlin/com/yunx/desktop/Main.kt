@@ -214,13 +214,14 @@ private val DesktopTypography = Typography(
 )
 
 fun main() {
+    var installerAfterExit: File? = null
     val instance = SingleInstanceGuard.acquire()
     if (instance == null) {
         JOptionPane.showMessageDialog(null, "解析已经在运行，请查看任务栏右下角托盘。", "解析", JOptionPane.INFORMATION_MESSAGE)
         return
     }
     try {
-        application {
+        application(exitProcessOnExit = false) {
             XunleiDeviceFingerprint.init()
             val state = rememberWindowState(position = WindowPosition(Alignment.Center), size = DpSize(1180.dp, 780.dp))
             val icon = remember { loadDesktopIcon() }
@@ -262,7 +263,10 @@ fun main() {
                 CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, controller.settings.fontScale)) {
                 MaterialTheme(colorScheme = scheme, typography = DesktopTypography) {
                     Surface(Modifier.fillMaxSize(), color = Canvas) {
-                        YunXDesktopApp(controller)
+                        YunXDesktopApp(controller) { file ->
+                            installerAfterExit = file
+                            exitApplication()
+                        }
                     }
                 }
                 }
@@ -271,6 +275,14 @@ fun main() {
     } finally {
         instance.close()
     }
+    installerAfterExit?.let { file ->
+        try {
+            java.awt.Desktop.getDesktop().open(file)
+        } catch (error: Exception) {
+            JOptionPane.showMessageDialog(null, "无法启动安装包，请手动打开：${file.absolutePath}", "解析更新", JOptionPane.ERROR_MESSAGE)
+        }
+    }
+    kotlin.system.exitProcess(0)
 }
 
 private fun loadDesktopIcon(): BitmapPainter {
@@ -295,7 +307,7 @@ private fun loadResourcePainter(resourceNames: List<String>): BitmapPainter {
 }
 
 @Composable
-private fun YunXDesktopApp(controller: DesktopAppController) {
+private fun YunXDesktopApp(controller: DesktopAppController, onInstallUpdate: (File) -> Unit) {
     Box(Modifier.fillMaxSize().background(Canvas).padding(12.dp)) {
         Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SidebarNavigation(controller.page) { controller.page = it }
@@ -334,7 +346,7 @@ private fun YunXDesktopApp(controller: DesktopAppController) {
                 }
             }
         }
-        controller.updateRelease?.let { release -> DesktopUpdateDialog(controller, release) }
+        controller.updateRelease?.let { release -> DesktopUpdateDialog(controller, release, onInstallUpdate) }
     }
 }
 
@@ -1819,7 +1831,7 @@ private fun SettingsActionRow(
 }
 
 @Composable
-private fun DesktopUpdateDialog(controller: DesktopAppController, release: DesktopRelease) {
+private fun DesktopUpdateDialog(controller: DesktopAppController, release: DesktopRelease, onInstallUpdate: (File) -> Unit) {
     AlertDialog(
         onDismissRequest = controller::dismissUpdate,
         icon = { Icon(Icons.Outlined.SystemUpdate, null, tint = Accent, modifier = Modifier.size(30.dp)) },
@@ -1853,7 +1865,7 @@ private fun DesktopUpdateDialog(controller: DesktopAppController, release: Deskt
         confirmButton = {
             val downloaded = controller.downloadedUpdate
             if (downloaded != null) {
-                Button(onClick = { controller.openFile(downloaded) }) { Text(tr("运行安装包")) }
+                Button(onClick = { controller.installUpdate(onInstallUpdate) }, enabled = !controller.updateDownloading) { Text(tr("退出并安装")) }
             } else {
                 Button(onClick = { controller.downloadUpdate(release) }, enabled = !controller.updateDownloading) {
                     Text(if (controller.updateDownloading) tr("下载并校验中…") else tr("下载更新"))
