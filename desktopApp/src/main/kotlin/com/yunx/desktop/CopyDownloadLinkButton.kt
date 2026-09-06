@@ -1,5 +1,7 @@
 package com.yunx.desktop
 
+import com.yunx.desktop.i18n.tr
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import kotlinx.coroutines.*
@@ -23,9 +25,9 @@ internal fun CopyDownloadLinkButton(fetch: suspend () -> Pair<String, suspend ()
         prepared = null
         if(cleanup != null) scope.launch(NonCancellable + Dispatchers.IO) { runCatching { cleanup() } }
     } }
-    TextButton(onClick = { shown = true; message = null }) { Text("复制直链") }
-    if(shown) AlertDialog(onDismissRequest = { if(!busy) close() },title = { Text("临时下载地址") },
-        text = { Text(message ?: "地址可能需要相应请求头，且会过期。部分网盘取链需要临时转存；外部下载结束后再关闭此窗口，关闭时会清理本次临时目录。不会复制 Cookie。") },
+    TextButton(onClick = { shown = true; message = null }) { Text(tr("复制直链")) }
+    if(shown) AlertDialog(onDismissRequest = { if(!busy) close() },title = { Text(tr("临时下载地址")) },
+        text = { Text(message ?: tr("地址可能需要相应请求头，且会过期。部分网盘取链需要临时转存；外部下载结束后再关闭此窗口，关闭时会清理本次临时目录。不会复制 Cookie。")) },
         confirmButton = { Button(enabled = !busy,onClick = {
             busy = true
             scope.launch {
@@ -38,6 +40,6 @@ internal fun CopyDownloadLinkButton(fetch: suspend () -> Pair<String, suspend ()
                 catch(e: Exception) { message = "获取失败：" + (e.message ?: "请检查账号或网络") }
                 finally { busy = false }
             }
-        }) { Text(if(busy) "正在获取…" else "获取并复制") } },
-        dismissButton = { TextButton(enabled = !busy,onClick = { close() }) { Text("关闭并清理") } })
+        }) { Text(if(busy) tr("正在获取…") else tr("获取并复制")) } },
+        dismissButton = { TextButton(enabled = !busy,onClick = { close() }) { Text(tr("关闭并清理")) } })
 }

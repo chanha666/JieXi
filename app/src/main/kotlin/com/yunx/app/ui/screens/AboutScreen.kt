@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -87,10 +89,10 @@ fun AboutScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("关于解析", style = MaterialTheme.typography.titleLarge) },
+                title = { Text(tr("关于解析"), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("返回"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -133,7 +135,7 @@ fun AboutScreen(
 
             // ---------- 开源协议 ----------
             Text(
-                text = "本项目基于 GNU AGPL-3.0 协议开源",
+                text = tr("本项目基于 GNU AGPL-3.0 协议开源"),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
@@ -148,7 +150,7 @@ fun AboutScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "解析 v$versionName · 上游基于 CYQawa/YunX · GNU AGPL-3.0",
+                text = tr("解析 v{0} · 上游基于 CYQawa/YunX · GNU AGPL-3.0", versionName),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.outline,
                 modifier = Modifier
@@ -179,7 +181,7 @@ private fun AppHeader(versionName: String, versionCode: Int) {
         }
         Spacer(modifier = Modifier.height(14.dp))
         Text(
-            text = "解析",
+            text = tr("解析"),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.SemiBold
         )
@@ -191,7 +193,7 @@ private fun AppHeader(versionName: String, versionCode: Int) {
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "网盘分享、公开视频下载与本地媒体工具",
+            text = tr("网盘分享、公开视频下载与本地媒体工具"),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.outline
         )
@@ -240,7 +242,7 @@ private fun PlatformCard() {
             CardIcon(Icons.Outlined.Storage)
             Spacer(modifier = Modifier.width(14.dp))
             Text(
-                text = "支持平台",
+                text = tr("支持平台"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -292,7 +294,7 @@ private fun FeatureCard() {
             CardIcon(Icons.Outlined.CheckCircle)
             Spacer(modifier = Modifier.width(14.dp))
             Text(
-                text = "功能特性",
+                text = tr("功能特性"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -334,7 +336,7 @@ private fun TechCard() {
             CardIcon(Icons.Outlined.Code)
             Spacer(modifier = Modifier.width(14.dp))
             Text(
-                text = "技术栈",
+                text = tr("技术栈"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -370,14 +372,14 @@ private fun DisclaimerCard() {
             Spacer(modifier = Modifier.width(14.dp))
             Column {
                 Text(
-                    text = "免责声明",
+                    text = tr("免责声明"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "本应用只处理公开资源或使用者有权访问的内容，不提供绕过 DRM、会员权益、付费墙或平台访问控制的能力。" +
-                        "项目依照 GNU AGPL-3.0 开源；分发修改版本时必须遵守许可证并提供对应源码。",
+                    text = tr("本应用只处理公开资源或使用者有权访问的内容，不提供绕过 DRM、会员权益、付费墙或平台访问控制的能力。") +
+                        tr("项目依照 GNU AGPL-3.0 开源；分发修改版本时必须遵守许可证并提供对应源码。"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 22.sp
@@ -421,12 +423,12 @@ private fun PreviewOnboardingCard(onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "重新预览欢迎界面",
+                    text = tr("重新预览欢迎界面"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "重新展示首次启动引导页",
+                    text = tr("重新展示首次启动引导页"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -510,7 +512,7 @@ private fun GitHubCard(context: android.content.Context) {
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "开源仓库",
+                    text = tr("开源仓库"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium
                 )

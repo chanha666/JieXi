@@ -1,5 +1,7 @@
 package com.yunx.app.ui.resolve
 
+import com.yunx.app.ui.i18n.tr
+
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -157,37 +159,37 @@ fun ShareDetailScreen(
                         if (viewModel.multiSelectMode) {
                             // 多选模式：取消选择
                             IconButton(onClick = { viewModel.exitMultiSelect() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "取消选择")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("取消选择"))
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "已选 ${viewModel.selected.size} 项",
+                                    text = tr("已选 {0} 项", viewModel.selected.size),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Medium
                                 )
                                 Text(
-                                    text = if (viewModel.selected.size == files.size) "已全选" else "点击选择更多文件",
+                                    text = if (viewModel.selected.size == files.size) tr("已全选") else tr("点击选择更多文件"),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             TextButton(onClick = { viewModel.toggleSelectAll(files) }) {
-                                Text(if (viewModel.selected.size == files.size) "取消全选" else "全选")
+                                Text(if (viewModel.selected.size == files.size) tr("取消全选") else tr("全选"))
                             }
                         } else {
                             IconButton(onClick = onExit) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("返回"))
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = session.title.ifBlank { "分享内容" },
+                                    text = session.title.ifBlank { tr("分享内容") },
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Medium,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = "共 ${files.size} 项",
+                                    text = tr("共 {0} 项", files.size),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -195,7 +197,7 @@ fun ShareDetailScreen(
                             IconButton(onClick = { showAddBookmark = true }) {
                                 Icon(
                                     imageVector = Icons.Outlined.BookmarkAdd,
-                                    contentDescription = "添加至收藏",
+                                    contentDescription = tr("添加至收藏"),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -222,7 +224,7 @@ fun ShareDetailScreen(
             if (files.isEmpty()) {
                 item {
                     Text(
-                        text = "此目录为空",
+                        text = tr("此目录为空"),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
@@ -309,17 +311,17 @@ fun ShareDetailScreen(
         var neverShow by remember { mutableStateOf(baiduLimitDismissed) }
         AlertDialog(
             onDismissRequest = { showBaiduLimitDialog = false },
-            title = { Text("下载大文件提示") },
+            title = { Text(tr("下载大文件提示")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "百度网盘非会员超过300MB会被限速，下载速度可能较慢。是否继续下载？",
+                        text = tr("百度网盘非会员超过300MB会被限速，下载速度可能较慢。是否继续下载？"),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = neverShow, onCheckedChange = { neverShow = it })
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("不再显示此提示", style = MaterialTheme.typography.bodyMedium)
+                        Text(tr("不再显示此提示"), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             },
@@ -332,10 +334,10 @@ fun ShareDetailScreen(
                         pendingBaiduAction?.invoke()
                         pendingBaiduAction = null
                     }
-                ) { Text("继续下载") }
+                ) { Text(tr("继续下载")) }
             },
             dismissButton = {
-                TextButton(onClick = { showBaiduLimitDialog = false }) { Text("取消") }
+                TextButton(onClick = { showBaiduLimitDialog = false }) { Text(tr("取消")) }
             }
         )
     }
@@ -347,10 +349,10 @@ fun ShareDetailScreen(
             confirmButton = { },
             dismissButton = {
                 TextButton(onClick = { viewModel.cancelBatch() }) {
-                    Text("中断", color = MaterialTheme.colorScheme.error)
+                    Text(tr("中断"), color = MaterialTheme.colorScheme.error)
                 }
             },
-            title = { Text("批量处理中") },
+            title = { Text(tr("批量处理中")) },
             text = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(
@@ -359,8 +361,8 @@ fun ShareDetailScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = viewModel.batchProgress?.let { "正在获取下载链接 $it" }
-                            ?: "正在批量处理，请稍候…",
+                        text = viewModel.batchProgress?.let { tr("正在获取下载链接 {0}", it) }
+                            ?: tr("正在批量处理，请稍候…"),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -443,7 +445,7 @@ internal fun BackToParentItem(onClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = "返回上一级",
+                text = tr("返回上一级"),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Medium
@@ -602,7 +604,7 @@ internal fun ShareFileRow(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = if (file.isdir) "文件夹" else formatSize(file.fsize),
+                    text = if (file.isdir) tr("文件夹") else formatSize(file.fsize),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -611,7 +613,7 @@ internal fun ShareFileRow(
                 IconButton(onClick = onSave, modifier = Modifier.size(36.dp)) {
                     Icon(
                         imageVector = Icons.Outlined.SaveAlt,
-                        contentDescription = "转存",
+                        contentDescription = tr("转存"),
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -621,7 +623,7 @@ internal fun ShareFileRow(
                 IconButton(onClick = onMore, modifier = Modifier.size(36.dp)) {
                     Icon(
                         imageVector = Icons.Outlined.MoreVert,
-                        contentDescription = "更多",
+                        contentDescription = tr("更多"),
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )

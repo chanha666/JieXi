@@ -42,6 +42,7 @@ class YunXApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        com.yunx.app.ui.i18n.LanguageController.initialize(this)
         Thread.setDefaultUncaughtExceptionHandler(CrashHandler(this))
         TaskStore.initialize(this)
         // 迅雷动态设备指纹：首次启动生成并持久化（开源分发后每台设备独立指纹）

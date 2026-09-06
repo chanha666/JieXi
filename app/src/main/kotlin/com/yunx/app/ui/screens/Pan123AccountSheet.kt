@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -157,7 +159,7 @@ fun Pan123AccountSheet(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "123云盘 · 已登录",
+                            text = tr("123云盘 · 已登录"),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -169,7 +171,7 @@ fun Pan123AccountSheet(
 
             // 登录信息
             Text(
-                text = "登录信息",
+                text = tr("登录信息"),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -182,9 +184,9 @@ fun Pan123AccountSheet(
                 )
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    InfoRow(label = "登录账号", value = account.account.ifBlank { account.nickname })
+                    InfoRow(label = tr("登录账号"), value = account.account.ifBlank { account.nickname })
                     Spacer(modifier = Modifier.height(12.dp))
-                    InfoRow(label = "登录时间", value = loginTime)
+                    InfoRow(label = tr("登录时间"), value = loginTime)
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = "Token（JWT）",
@@ -207,7 +209,7 @@ fun Pan123AccountSheet(
                     ) {
                         if (tokenTruncated) {
                             TextButton(onClick = { showFullToken = !showFullToken }) {
-                                Text(if (showFullToken) "收起" else "展开全部")
+                                Text(if (showFullToken) tr("收起") else tr("展开全部"))
                             }
                         }
                         TextButton(
@@ -223,7 +225,7 @@ fun Pan123AccountSheet(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("复制")
+                            Text(tr("复制"))
                         }
                     }
                 }
@@ -248,7 +250,7 @@ fun Pan123AccountSheet(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("退出登录")
+                Text(tr("退出登录"))
             }
 
             // 复制提示（ModalBottomSheet 为独立窗口，需自带 Snackbar 宿主）
@@ -260,8 +262,8 @@ fun Pan123AccountSheet(
     if (showLogoutConfirm) {
         AlertDialog(
             onDismissRequest = { showLogoutConfirm = false },
-            title = { Text("退出登录") },
-            text = { Text("确定要退出当前 123 账号吗？退出后将清除本地凭证。") },
+            title = { Text(tr("退出登录")) },
+            text = { Text(tr("确定要退出当前 123 账号吗？退出后将清除本地凭证。")) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -269,11 +271,11 @@ fun Pan123AccountSheet(
                         onLogout()
                     }
                 ) {
-                    Text("退出", color = MaterialTheme.colorScheme.error)
+                    Text(tr("退出"), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showLogoutConfirm = false }) { Text("取消") }
+                TextButton(onClick = { showLogoutConfirm = false }) { Text(tr("取消")) }
             }
         )
     }

@@ -1,4 +1,8 @@
 package com.yunx.app.ui.screens
+
+import com.yunx.app.ui.i18n.tr
+
+import com.yunx.app.ui.i18n.tr
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -225,11 +229,11 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        SectionLabel("下载")
+        SectionLabel(tr("下载"))
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
             Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                Text("性能预设", fontWeight = FontWeight.SemiBold)
-                Text("稳定 / 均衡 / 极速会同时调整任务数和连接数", style = MaterialTheme.typography.bodySmall)
+                Text(tr("性能预设"), fontWeight = FontWeight.SemiBold)
+                Text(tr("稳定 / 均衡 / 极速会同时调整任务数和连接数"), style = MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(DownloadPreset.STABLE, DownloadPreset.BALANCED, DownloadPreset.TURBO).forEach { option ->
@@ -242,20 +246,20 @@ fun SettingsScreen(
                 }
                 Spacer(Modifier.height(6.dp))
                 if (preset == DownloadPreset.SINGLE_TASK_MAX) Button(onClick = {}, modifier = Modifier.fillMaxWidth()) {
-                    Text("单任务满速 · 48 路 · 不限速")
+                    Text(tr("单任务满速 · 48 路 · 不限速"))
                 } else TextButton(onClick = {
                     preset = DownloadPreset.SINGLE_TASK_MAX
                     settingsRepo.downloadPreset = DownloadPreset.SINGLE_TASK_MAX
                     maxConcurrent = settingsRepo.maxConcurrentDownloads
-                }, modifier = Modifier.fillMaxWidth()) { Text("单任务满速 · 48 路 · 不限速") }
+                }, modifier = Modifier.fillMaxWidth()) { Text(tr("单任务满速 · 48 路 · 不限速")) }
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
         SettingsItem(
             icon = Icons.Outlined.Tune,
-            title = "下载线程数",
-            description = "按网盘分别设置分片并发数（默认 32，最高 512）",
+            title = tr("下载线程数"),
+            description = tr("按网盘分别设置分片并发数（默认 32，最高 512）"),
             onClick = { showThreadsDialog = true }
         )
 
@@ -265,9 +269,9 @@ fun SettingsScreen(
         // 已自定义时卡片右侧内嵌「恢复默认」操作（不单独外露按钮）
         SettingsItem(
             icon = Icons.Outlined.FolderOpen,
-            title = "下载保存目录",
-            description = downloadDirUri?.let { "已自定义：${DownloadSaver.safDirDisplay(it)}" }
-                ?: "系统默认 Download（点击自定义）",
+            title = tr("下载保存目录"),
+            description = downloadDirUri?.let { tr("已自定义：{0}", DownloadSaver.safDirDisplay(it)) }
+                ?: tr("系统默认 Download（点击自定义）"),
             onClick = { dirLauncher.launch(null) },
             trailing = if (downloadDirUri != null) {
                 {
@@ -280,7 +284,7 @@ fun SettingsScreen(
                         modifier = Modifier.padding(start = 8.dp)
                     ) {
                         Text(
-                            text = "恢复默认",
+                            text = tr("恢复默认"),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -296,8 +300,8 @@ fun SettingsScreen(
         // 网络与下载策略
         SettingsItem(
             icon = Icons.Outlined.Layers,
-            title = "最大同时下载任务数",
-            description = "同时下载 $maxConcurrent 个任务（限制后台并发，避免占满带宽）",
+            title = tr("最大同时下载任务数"),
+            description = tr("同时下载 {0} 个任务（限制后台并发，避免占满带宽）", maxConcurrent),
             onClick = { showConcurrencyDialog = true }
         )
 
@@ -305,8 +309,8 @@ fun SettingsScreen(
 
         SettingsItem(
             icon = Icons.Outlined.Speed,
-            title = "下载速度限制",
-            description = speedLimitText(speedLimitBps),
+            title = tr("下载速度限制"),
+            description = tr(speedLimitText(speedLimitBps)),
             onClick = { showSpeedDialog = true }
         )
 
@@ -314,30 +318,30 @@ fun SettingsScreen(
 
         SettingsItem(
             icon = Icons.Outlined.Refresh,
-            title = "失败自动重试",
-            description = if (retryCount == 0) "失败后不自动重试" else "失败后自动重试 $retryCount 次（断点续传）",
+            title = tr("失败自动重试"),
+            description = if (retryCount == 0) tr("失败后不自动重试") else tr("失败后自动重试 {0} 次（断点续传）", retryCount),
             onClick = { showRetryDialog = true }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
-        SectionLabel("网络与电量")
-        SettingsToggle("仅 Wi-Fi 下载", "移动网络下自动暂停任务", wifiOnly) { wifiOnly = it; settingsRepo.wifiOnly = it }
+        SectionLabel(tr("网络与电量"))
+        SettingsToggle(tr("仅 Wi-Fi 下载"), tr("移动网络下自动暂停任务"), wifiOnly) { wifiOnly = it; settingsRepo.wifiOnly = it }
         Spacer(Modifier.height(8.dp))
-        SettingsToggle("允许漫游网络", "关闭时漫游网络不会开始下载", allowRoaming) { allowRoaming = it; settingsRepo.allowRoaming = it }
+        SettingsToggle(tr("允许漫游网络"), tr("关闭时漫游网络不会开始下载"), allowRoaming) { allowRoaming = it; settingsRepo.allowRoaming = it }
         Spacer(Modifier.height(8.dp))
-        SettingsToggle("仅充电时下载", "拔下电源后新任务保持暂停", chargingOnly) { chargingOnly = it; settingsRepo.chargingOnly = it }
+        SettingsToggle(tr("仅充电时下载"), tr("拔下电源后新任务保持暂停"), chargingOnly) { chargingOnly = it; settingsRepo.chargingOnly = it }
         Spacer(Modifier.height(8.dp))
-        SettingsToggle("低电量自动暂停", "电量低于 15% 且未充电时暂停", lowBatteryPause) { lowBatteryPause = it; settingsRepo.pauseOnLowBattery = it }
+        SettingsToggle(tr("低电量自动暂停"), tr("电量低于 15% 且未充电时暂停"), lowBatteryPause) { lowBatteryPause = it; settingsRepo.pauseOnLowBattery = it }
         Spacer(Modifier.height(8.dp))
-        SettingsToggle("减少动画", "关闭页面位移等非必要动效", reduceMotion) { reduceMotion = it; settingsRepo.reduceMotion = it }
+        SettingsToggle(tr("减少动画"), tr("关闭页面位移等非必要动效"), reduceMotion) { reduceMotion = it; settingsRepo.reduceMotion = it }
 
         Spacer(modifier = Modifier.height(8.dp))
 
         // 用户体验与系统适配：锁屏保持下载 / 通知栏进度样式
         SettingsItem(
             icon = Icons.Outlined.Power,
-            title = "锁屏后保持下载",
-            description = "开启后下载时获取 WakeLock 维持网络，并可加入「忽略电池优化」白名单",
+            title = tr("锁屏后保持下载"),
+            description = tr("开启后下载时获取 WakeLock 维持网络，并可加入「忽略电池优化」白名单"),
             onClick = {
                 keepLocked = !keepLocked
                 settingsRepo.keepDownloadWhenLocked = keepLocked
@@ -355,14 +359,14 @@ fun SettingsScreen(
 
         SettingsItem(
             icon = Icons.Outlined.Notifications,
-            title = "通知栏下载进度",
+            title = tr("通知栏下载进度"),
             description = when {
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                     ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
                     PackageManager.PERMISSION_GRANTED ->
-                    "未授予通知权限，下载通知将不可见（点击申请）"
-                showSpeed -> "完整通知：进度条 + 下载速度"
-                else -> "仅显示通知（隐藏下载速度）"
+                    tr("未授予通知权限，下载通知将不可见（点击申请）")
+                showSpeed -> tr("完整通知：进度条 + 下载速度")
+                else -> tr("仅显示通知（隐藏下载速度）")
             },
             onClick = {
                 // Android 13+ 未授权：先申请通知权限，授权后自动开启完整通知
@@ -381,21 +385,21 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        SectionLabel("外观")
+        SectionLabel(tr("外观"))
         SettingsItem(
             icon = Icons.Outlined.Palette,
-            title = "主题与外观",
-            description = "主题色、动态色彩与深色模式",
+            title = tr("主题与外观"),
+            description = tr("主题色、动态色彩与深色模式"),
             onClick = onThemeClick
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        SectionLabel("通用")
+        SectionLabel(tr("通用"))
         SettingsItem(
             icon = Icons.Outlined.Code,
-            title = "GitHub 问题反馈",
-            description = if (githubRepository.isBlank()) "尚未配置你的 GitHub 仓库" else "提交问题、建议并可附带诊断日志",
+            title = tr("GitHub 问题反馈"),
+            description = if (githubRepository.isBlank()) tr("尚未配置你的 GitHub 仓库") else tr("提交问题、建议并可附带诊断日志"),
             onClick = {
                 val url = settingsRepo.githubIssuesUrl()
                 if (url == null) showGitHubDialog = true
@@ -407,7 +411,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
         SettingsItem(
             icon = Icons.Outlined.Email,
-            title = "邮箱反馈",
+            title = tr("邮箱反馈"),
             description = "3316109338@qq.com",
             onClick = {
                 val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:3316109338@qq.com"))
@@ -420,8 +424,8 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
         SettingsItem(
             icon = Icons.Outlined.SystemUpdate,
-            title = "检查更新",
-            description = "通过作者 RSA 签名通道检查并在软件内下载",
+            title = tr("检查更新"),
+            description = tr("通过作者 RSA 签名通道检查并在软件内下载"),
             onClick = {
                 scope.launch {
                     SnackbarController.show("正在检查更新…")
@@ -441,36 +445,36 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
         SettingsItem(
             icon = Icons.Outlined.Article,
-            title = "导出日志",
-            description = "导出崩溃日志与应用信息，便于排查问题",
+            title = tr("导出日志"),
+            description = tr("导出崩溃日志与应用信息，便于排查问题"),
             onClick = { showLogDialog = true }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        SectionLabel("网盘认证")
+        SectionLabel(tr("网盘认证"))
         SettingsItem(
             icon = Icons.Outlined.Backup,
-            title = "导出网盘认证",
-            description = "使用至少 8 位口令加密 Cookie/JWT 后导出",
+            title = tr("导出网盘认证"),
+            description = tr("使用至少 8 位口令加密 Cookie/JWT 后导出"),
             onClick = { showExportAuthDialog = true }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
         SettingsItem(
             icon = Icons.Outlined.Restore,
-            title = "导入网盘认证",
-            description = "选择加密或明文的认证备份文件，恢复网盘登录",
+            title = tr("导入网盘认证"),
+            description = tr("选择加密或明文的认证备份文件，恢复网盘登录"),
             onClick = { importLauncher.launch(arrayOf("application/json", "application/octet-stream", "*/*")) }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        SectionLabel("关于")
+        SectionLabel(tr("关于"))
         SettingsItem(
             icon = Icons.Outlined.Info,
-            title = "关于解析",
-            description = "版本信息、支持平台与技术说明",
+            title = tr("关于解析"),
+            description = tr("版本信息、支持平台与技术说明"),
             onClick = onAboutClick,
             onLongClick = { showDevMenu = true } // 长按打开隐藏开发调试菜单
         )
@@ -478,8 +482,8 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
         SettingsItem(
             icon = Icons.Outlined.VolunteerActivism,
-            title = "支持开发",
-            description = "微信扫码捐赠，支持项目持续维护",
+            title = tr("支持开发"),
+            description = tr("微信扫码捐赠，支持项目持续维护"),
             onClick = onSupportClick
         )
     }
@@ -487,15 +491,15 @@ fun SettingsScreen(
     if (showGitHubDialog) {
         AlertDialog(
             onDismissRequest = { showGitHubDialog = false },
-            title = { Text("GitHub 反馈仓库") },
+            title = { Text(tr("GitHub 反馈仓库")) },
             text = {
                 Column {
-                    Text("填写你自己的仓库地址。定制版不会把反馈发到原项目。", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(tr("填写你自己的仓库地址。定制版不会把反馈发到原项目。"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
                         value = githubRepository,
                         onValueChange = { githubRepository = it },
-                        label = { Text("https://github.com/用户名/仓库名") },
+                        label = { Text(tr("https://github.com/用户名/仓库名")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -506,9 +510,9 @@ fun SettingsScreen(
                     runCatching { settingsRepo.githubRepositoryUrl = githubRepository }
                         .onSuccess { githubRepository = settingsRepo.githubRepositoryUrl; showGitHubDialog = false; SnackbarController.show("GitHub 地址已保存") }
                         .onFailure { SnackbarController.show(it.message ?: "地址无效") }
-                }) { Text("保存") }
+                }) { Text(tr("保存")) }
             },
-            dismissButton = { TextButton(onClick = { showGitHubDialog = false }) { Text("取消") } }
+            dismissButton = { TextButton(onClick = { showGitHubDialog = false }) { Text(tr("取消")) } }
         )
     }
 
@@ -516,11 +520,11 @@ fun SettingsScreen(
     if (showLogDialog) {
         AlertDialog(
             onDismissRequest = { showLogDialog = false },
-            title = { Text("导出日志") },
+            title = { Text(tr("导出日志")) },
             text = {
                 Column {
                     Text(
-                        text = "选择日志导出方式：",
+                        text = tr("选择日志导出方式："),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -539,7 +543,7 @@ fun SettingsScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("分享日志（发送到其他应用）")
+                        Text(tr("分享日志（发送到其他应用）"))
                     }
                     TextButton(
                         onClick = {
@@ -553,7 +557,7 @@ fun SettingsScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("保存到下载目录")
+                        Text(tr("保存到下载目录"))
                     }
                     TextButton(
                         onClick = {
@@ -567,12 +571,12 @@ fun SettingsScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("清空日志缓存（logcat -c）")
+                        Text(tr("清空日志缓存（logcat -c）"))
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showLogDialog = false }) { Text("取消") }
+                TextButton(onClick = { showLogDialog = false }) { Text(tr("取消")) }
             }
         )
     }
@@ -581,7 +585,7 @@ fun SettingsScreen(
     if (showDevMenu) {
         AlertDialog(
             onDismissRequest = { showDevMenu = false },
-            title = { Text("开发调试") },
+            title = { Text(tr("开发调试")) },
             text = {
                 Column {
                     Button(
@@ -599,11 +603,11 @@ fun SettingsScreen(
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("显示检查更新弹窗") }
+                    ) { Text(tr("显示检查更新弹窗")) }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showDevMenu = false }) { Text("关闭") }
+                TextButton(onClick = { showDevMenu = false }) { Text(tr("关闭")) }
             }
         )
     }
@@ -638,11 +642,11 @@ fun SettingsScreen(
     if (showThreadsDialog) {
         AlertDialog(
             onDismissRequest = { showThreadsDialog = false },
-            title = { Text("下载线程数") },
+            title = { Text(tr("下载线程数")) },
             text = {
                 Column {
                     Text(
-                        text = "按网盘分别设置分片并发数；线程数不是越多越好，适当调整",
+                        text = tr("按网盘分别设置分片并发数；线程数不是越多越好，适当调整"),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -666,7 +670,7 @@ fun SettingsScreen(
                                 modifier = Modifier.weight(1f)
                             )
                             Text(
-                                text = if (isXunlei) "固定 8 线程" else "$current 线程",
+                                text = if (isXunlei) tr("固定 8 线程") else tr("{0} 线程", current),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = if (isXunlei) {
                                     MaterialTheme.colorScheme.onSurfaceVariant
@@ -687,7 +691,7 @@ fun SettingsScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showThreadsDialog = false }) { Text("取消") }
+                TextButton(onClick = { showThreadsDialog = false }) { Text(tr("取消")) }
             }
         )
     }
@@ -697,7 +701,7 @@ fun SettingsScreen(
         val current = settingsRepo.downloadThreadsFor(selectedThreadPlatform.platform)
         AlertDialog(
             onDismissRequest = { showPlatformThreadDialog = false },
-            title = { Text("${selectedThreadPlatform.label}线程数") },
+            title = { Text(tr("{0}线程数", selectedThreadPlatform.label)) },
             text = {
                 Column(
                     modifier = Modifier
@@ -727,7 +731,7 @@ fun SettingsScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showPlatformThreadDialog = false }) { Text("取消") }
+                TextButton(onClick = { showPlatformThreadDialog = false }) { Text(tr("取消")) }
             }
         )
     }
@@ -810,7 +814,7 @@ fun SettingsScreen(
         val options = listOf(1, 2, 3, 5, 8)
         AlertDialog(
             onDismissRequest = { showConcurrencyDialog = false },
-            title = { Text("最大同时下载任务数") },
+            title = { Text(tr("最大同时下载任务数")) },
             text = {
                 Column {
                     options.forEach { v ->
@@ -827,13 +831,13 @@ fun SettingsScreen(
                                 }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("同时下载 $v 个任务", style = MaterialTheme.typography.bodyMedium)
+                            Text(tr("同时下载 {0} 个任务", v), style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showConcurrencyDialog = false }) { Text("取消") }
+                TextButton(onClick = { showConcurrencyDialog = false }) { Text(tr("取消")) }
             }
         )
     }
@@ -858,7 +862,7 @@ fun SettingsScreen(
         }
         AlertDialog(
             onDismissRequest = { showSpeedDialog = false },
-            title = { Text("下载速度限制") },
+            title = { Text(tr("下载速度限制")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     presets.forEach { v ->
@@ -872,7 +876,7 @@ fun SettingsScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (v == 0L) "不限速" else speedLimitText(v),
+                                text = if (v == 0L) tr("不限速") else speedLimitText(v),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -901,7 +905,7 @@ fun SettingsScreen(
                                 tempSelected = -1L
                             },
                             modifier = Modifier.weight(1f),
-                            label = { Text("自定义 KB/s") },
+                            label = { Text(tr("自定义 KB/s")) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true
                         )
@@ -927,10 +931,10 @@ fun SettingsScreen(
                         // 未做任何选择：保持当前值
                         showSpeedDialog = false
                     }
-                ) { Text("确定") }
+                ) { Text(tr("确定")) }
             },
             dismissButton = {
-                TextButton(onClick = { showSpeedDialog = false }) { Text("取消") }
+                TextButton(onClick = { showSpeedDialog = false }) { Text(tr("取消")) }
             }
         )
     }
@@ -940,7 +944,7 @@ fun SettingsScreen(
         val options = listOf(0, 1, 2, 3, 5, 8, 10)
         AlertDialog(
             onDismissRequest = { showRetryDialog = false },
-            title = { Text("失败自动重试") },
+            title = { Text(tr("失败自动重试")) },
             text = {
                 Column {
                     options.forEach { v ->
@@ -958,7 +962,7 @@ fun SettingsScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (v == 0) "不自动重试" else "失败后自动重试 $v 次",
+                                text = if (v == 0) tr("不自动重试") else tr("失败后自动重试 {0} 次", v),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -966,7 +970,7 @@ fun SettingsScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showRetryDialog = false }) { Text("取消") }
+                TextButton(onClick = { showRetryDialog = false }) { Text(tr("取消")) }
             }
         )
     }
@@ -975,10 +979,10 @@ fun SettingsScreen(
     if (showBatteryDialog) {
         AlertDialog(
             onDismissRequest = { showBatteryDialog = false },
-            title = { Text("保持后台下载") },
+            title = { Text(tr("保持后台下载")) },
             text = {
                 Text(
-                    text = "为确保障屏后下载不中断，建议将解析加入「忽略电池优化」白名单。是否前往系统设置？",
+                    text = tr("为确保障屏后下载不中断，建议将解析加入「忽略电池优化」白名单。是否前往系统设置？"),
                     style = MaterialTheme.typography.bodyMedium
                 )
             },
@@ -992,10 +996,10 @@ fun SettingsScreen(
                             )
                         }
                     }
-                ) { Text("前往设置") }
+                ) { Text(tr("前往设置")) }
             },
             dismissButton = {
-                TextButton(onClick = { showBatteryDialog = false }) { Text("暂不") }
+                TextButton(onClick = { showBatteryDialog = false }) { Text(tr("暂不")) }
             }
         )
     }
@@ -1011,11 +1015,11 @@ private fun ExportAuthDialog(
     var onlyLoggedIn by remember { mutableStateOf(true) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("导出网盘认证") },
+        title = { Text(tr("导出网盘认证")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    text = "设置至少 8 位密码对认证文件进行 AES 加密。密码请务必牢记，丢失无法找回。",
+                    text = tr("设置至少 8 位密码对认证文件进行 AES 加密。密码请务必牢记，丢失无法找回。"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1023,13 +1027,13 @@ private fun ExportAuthDialog(
                     value = password,
                     onValueChange = { password = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("加密密码（至少 8 位）") },
+                    label = { Text(tr("加密密码（至少 8 位）")) },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     singleLine = true
                 )
                 Text(
-                    text = "导出范围",
+                    text = tr("导出范围"),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1042,7 +1046,7 @@ private fun ExportAuthDialog(
                         onClick = { onlyLoggedIn = true }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("仅导出当前已登录的网盘", style = MaterialTheme.typography.bodyMedium)
+                    Text(tr("仅导出当前已登录的网盘"), style = MaterialTheme.typography.bodyMedium)
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1053,7 +1057,7 @@ private fun ExportAuthDialog(
                         onClick = { onlyLoggedIn = false }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("导出全部绑定的网盘", style = MaterialTheme.typography.bodyMedium)
+                    Text(tr("导出全部绑定的网盘"), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         },
@@ -1061,10 +1065,10 @@ private fun ExportAuthDialog(
             Button(
                 onClick = { onConfirm(password, onlyLoggedIn) },
                 enabled = password.length >= 8
-            ) { Text("导出") }
+            ) { Text(tr("导出")) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(tr("取消")) }
         }
     )
 }
@@ -1078,11 +1082,11 @@ private fun ImportAuthDialog(
     var password by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("导入网盘认证") },
+        title = { Text(tr("导入网盘认证")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    text = "该备份文件已加密，请输入导出时设置的密码进行解密。",
+                    text = tr("该备份文件已加密，请输入导出时设置的密码进行解密。"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1090,7 +1094,7 @@ private fun ImportAuthDialog(
                     value = password,
                     onValueChange = { password = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("解密密码") },
+                    label = { Text(tr("解密密码")) },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     singleLine = true
@@ -1101,10 +1105,10 @@ private fun ImportAuthDialog(
             Button(
                 onClick = { onConfirm(password) },
                 enabled = password.isNotBlank()
-            ) { Text("解密并导入") }
+            ) { Text(tr("解密并导入")) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(tr("取消")) }
         }
     )
 }
@@ -1238,7 +1242,7 @@ private fun RadioThreadRow(
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "$value 线程",
+            text = tr("{0} 线程", value),
             style = MaterialTheme.typography.bodyLarge
         )
     }

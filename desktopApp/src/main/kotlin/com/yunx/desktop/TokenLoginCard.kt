@@ -1,5 +1,7 @@
 package com.yunx.desktop
 
+import com.yunx.desktop.i18n.tr
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -46,16 +48,16 @@ internal fun TokenLoginCard(store: CredentialStore, xunlei: Boolean, onSuccess: 
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { expanded = !expanded }, enabled = !busy) { Text(if(expanded) "收起登录" else "登录") }
+            OutlinedButton(onClick = { expanded = !expanded }, enabled = !busy) { Text(if(expanded) tr("收起登录") else tr("登录")) }
             TextButton(onClick = {
                 val keys = if(xunlei) listOf(CredentialKey.XUNLEI_ACCESS_TOKEN, CredentialKey.XUNLEI_REFRESH_TOKEN, CredentialKey.XUNLEI_CAPTCHA_TOKEN, CredentialKey.XUNLEI_DEVICE_ID)
                     else listOf(CredentialKey.PAN123_TOKEN)
                 keys.forEach(store::remove); message = "本机授权已移除"; onSuccess()
-            }, enabled = !busy) { Text("退出账号") }
+            }, enabled = !busy) { Text(tr("退出账号")) }
         }
         if(expanded) {
-            OutlinedTextField(username, { username = it }, Modifier.fillMaxWidth(), label = { Text("手机号 / 账号") }, singleLine = true, enabled = !busy)
-            OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), label = { Text("密码（不保存）") }, visualTransformation = PasswordVisualTransformation(), singleLine = true, enabled = !busy)
+            OutlinedTextField(username, { username = it }, Modifier.fillMaxWidth(), label = { Text(tr("手机号 / 账号")) }, singleLine = true, enabled = !busy)
+            OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), label = { Text(tr("密码（不保存）")) }, visualTransformation = PasswordVisualTransformation(), singleLine = true, enabled = !busy)
             Button(enabled = !busy && username.isNotBlank() && password.isNotBlank(), onClick = {
                 request {
                     if(xunlei) finish(api.loginWithPassword(username.trim(), password, device))
@@ -65,19 +67,19 @@ internal fun TokenLoginCard(store: CredentialStore, xunlei: Boolean, onSuccess: 
                         password = ""; expanded = false; message = "登录成功，授权已加密保存"; onSuccess()
                     }
                 }
-            }) { Text(if(busy) "处理中…" else "登录") }
+            }) { Text(if(busy) tr("处理中…") else tr("登录")) }
             if(xunlei) {
-                OutlinedTextField(code,{ code = it },Modifier.fillMaxWidth(),label = { Text("短信验证码") },singleLine = true, enabled = !busy)
+                OutlinedTextField(code,{ code = it },Modifier.fillMaxWidth(),label = { Text(tr("短信验证码")) },singleLine = true, enabled = !busy)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(enabled = !busy && username.isNotBlank(), onClick = { request {
                         val result = api.sendSms(username.trim(),device)
                         check(result.smsCreditKey.isNotBlank()) { result.message.ifBlank { "短信发送失败" } }
                         step = result; message = "验证码已发送"
-                    } }) { Text("发送验证码") }
+                    } }) { Text(tr("发送验证码")) }
                     Button(enabled = !busy && code.isNotBlank() && !step?.smsCreditKey.isNullOrBlank(), onClick = { request {
                         val current = checkNotNull(step)
                         finish(api.smsLogin(username.trim(),code.trim(),current.smsCreditKey,current.smsToken,device))
-                    } }) { Text("验证码登录") }
+                    } }) { Text(tr("验证码登录")) }
                 }
             }
         }

@@ -25,7 +25,7 @@ $assets = foreach ($name in $assetNames) {
 
 $payloadObject = [ordered]@{
     tag_name = "v$Version"
-    body = "解析 $Version 整合版：统一 Windows 与 Android 的网盘分享解析、公开视频下载、批量任务、断点续传、媒体工具、诊断反馈、品牌图标与签名更新。"
+    body = "解析 $Version：Windows / Android 统一界面，补齐个人网盘、历史收藏、认证备份和下载操作，新增简体中文、繁體中文与 English。语言入口：我的 → 外观。`nJieXi $Version: unified Windows / Android interface, cloud-file management, bookmarks, encrypted backups and download actions. Switch Simplified Chinese, Traditional Chinese or English in My → Appearance → Language."
     published_at = [DateTimeOffset]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
     assets = @($assets)
 }

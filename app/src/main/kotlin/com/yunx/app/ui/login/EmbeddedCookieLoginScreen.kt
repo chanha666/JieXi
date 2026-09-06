@@ -1,5 +1,7 @@
 package com.yunx.app.ui.login
 
+import com.yunx.app.ui.i18n.tr
+
 import android.graphics.Bitmap
 import android.content.Intent
 import android.os.Build
@@ -191,7 +193,7 @@ internal fun EmbeddedCookieLoginScreen(
                             if (webView.canGoBack()) webView.goBack() else onBack()
                         }
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("返回"))
                     }
                 },
                 actions = {
@@ -199,7 +201,7 @@ internal fun EmbeddedCookieLoginScreen(
                         if (isSaving) {
                             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                         } else {
-                            Text("完成")
+                            Text(tr("完成"))
                         }
                     }
                 },

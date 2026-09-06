@@ -1,5 +1,7 @@
 package com.yunx.desktop
 
+import com.yunx.desktop.i18n.tr
+
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.material3.*
@@ -20,13 +22,13 @@ internal fun CompletedFileActions(controller: DesktopAppController, file: File?,
     var confirm by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     FlowRow {
-        TextButton(onClick = { runCatching { file?.let(controller::openFile) }.onFailure { message = "无法打开文件：${it.message}" } }, enabled = file?.isFile == true) { Text("打开文件") }
-        TextButton(onClick = onAgain) { Text("重新下载") }
-        TextButton(onClick = { confirm = true }, enabled = file?.let(::recyclableOutput) == true) { Text("删除本地文件…") }
+        TextButton(onClick = { runCatching { file?.let(controller::openFile) }.onFailure { message = "无法打开文件：${it.message}" } }, enabled = file?.isFile == true) { Text(tr("打开文件")) }
+        TextButton(onClick = onAgain) { Text(tr("重新下载")) }
+        TextButton(onClick = { confirm = true }, enabled = file?.let(::recyclableOutput) == true) { Text(tr("删除本地文件…")) }
     }
     message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-    if(confirm) AlertDialog(onDismissRequest = { confirm = false }, title = { Text("移到回收站并删除任务？") },
-        text = { Text("仅处理这一个已完成文件，可从 Windows 回收站恢复。\n${file?.absolutePath}") },
+    if(confirm) AlertDialog(onDismissRequest = { confirm = false }, title = { Text(tr("移到回收站并删除任务？")) },
+        text = { Text(tr("仅处理这一个已完成文件，可从 Windows 回收站恢复。\n{0}", file?.absolutePath)) },
         confirmButton = { Button(onClick = {
             runCatching {
                 require(file != null && recyclableOutput(file)) { "文件已移动、不存在或不是普通文件" }
@@ -35,5 +37,5 @@ internal fun CompletedFileActions(controller: DesktopAppController, file: File?,
                 onRemoved()
             }.onFailure { message = it.message }
             confirm = false
-        }) { Text("移到回收站") } }, dismissButton = { TextButton(onClick = { confirm = false }) { Text("取消") } })
+        }) { Text(tr("移到回收站")) } }, dismissButton = { TextButton(onClick = { confirm = false }) { Text(tr("取消")) } })
 }

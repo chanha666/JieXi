@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -28,25 +30,25 @@ fun MineScreen(
     onAbout: () -> Unit
 ) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)) {
-        Text("按自己的习惯使用", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+        Text(tr("按自己的习惯使用"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
-        Text("管理内容，也照顾每一次下载。", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(tr("管理内容，也照顾每一次下载。"), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(28.dp))
-        MineSection("我的内容")
-        MineRow(Icons.Outlined.Bookmarks, "收藏链接", "留住下次还会用到的内容", onBookmarks)
-        MineRow(Icons.Outlined.History, "解析历史", "查看和再次使用网盘链接") { onNavigate(MainTab.Library) }
-        MineRow(Icons.Outlined.Cloud, "网盘与账号", "浏览文件、管理登录状态") { onNavigate(MainTab.Drive) }
+        MineSection(tr("我的内容"))
+        MineRow(Icons.Outlined.Bookmarks, tr("收藏链接"), tr("留住下次还会用到的内容"), onBookmarks)
+        MineRow(Icons.Outlined.History, tr("解析历史"), tr("查看和再次使用网盘链接")) { onNavigate(MainTab.Library) }
+        MineRow(Icons.Outlined.Cloud, tr("网盘与账号"), tr("浏览文件、管理登录状态")) { onNavigate(MainTab.Drive) }
         Spacer(Modifier.height(20.dp))
-        MineSection("工具与偏好")
-        MineRow(Icons.Outlined.Tune, "媒体小工具", "图片去水印、视频截图与音频提取", onTools)
-        MineRow(Icons.Outlined.Palette, "外观", "主题、色彩与显示", onTheme)
-        MineRow(Icons.Outlined.Settings, "下载与应用设置", "保存位置、下载预设与反馈") { onNavigate(MainTab.Settings) }
-        MineRow(Icons.Outlined.VideoLibrary, "视频下载偏好", "画质、命名与下载核心", onMediaSettings)
-        MineRow(Icons.Outlined.Info, "平台状态与诊断", "遇到问题时，从这里开始") { onNavigate(MainTab.Status) }
+        MineSection(tr("工具与偏好"))
+        MineRow(Icons.Outlined.Tune, tr("媒体小工具"), tr("图片去水印、视频截图与音频提取"), onTools)
+        MineRow(Icons.Outlined.Palette, tr("外观"), tr("主题、色彩与显示"), onTheme)
+        MineRow(Icons.Outlined.Settings, tr("下载与应用设置"), tr("保存位置、下载预设与反馈")) { onNavigate(MainTab.Settings) }
+        MineRow(Icons.Outlined.VideoLibrary, tr("视频下载偏好"), tr("画质、命名与下载核心"), onMediaSettings)
+        MineRow(Icons.Outlined.Info, tr("平台状态与诊断"), tr("遇到问题时，从这里开始")) { onNavigate(MainTab.Status) }
         Spacer(Modifier.height(20.dp))
-        MineSection("关于解析")
-        MineRow(Icons.Outlined.FavoriteBorder, "支持作者", "如果解析帮到了你，欢迎随心赞赏", onSupport)
-        MineRow(Icons.Outlined.Info, "关于与更新", "解析 ${BuildConfig.VERSION_NAME}", onAbout)
+        MineSection(tr("关于解析"))
+        MineRow(Icons.Outlined.FavoriteBorder, tr("支持作者"), tr("如果解析帮到了你，欢迎随心赞赏"), onSupport)
+        MineRow(Icons.Outlined.Info, tr("关于与更新"), tr("解析 {0}", BuildConfig.VERSION_NAME), onAbout)
         Spacer(Modifier.height(24.dp))
     }
 }

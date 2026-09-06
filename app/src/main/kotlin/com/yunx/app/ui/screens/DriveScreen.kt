@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -265,7 +267,7 @@ fun DriveScreen(
             ) {
                 item {
                     Text(
-                        text = "公开链接优先免登录解析；需要授权时点一次“登录”即可",
+                        text = tr("公开链接优先免登录解析；需要授权时点一次“登录”即可"),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 4.dp)
@@ -555,13 +557,13 @@ private fun DriveAccountCardContent(
             account.isLoggedIn && onMoreClick != null -> IconButton(onClick = onMoreClick) {
                 Icon(
                     imageVector = Icons.Outlined.MoreVert,
-                    contentDescription = "更多",
+                    contentDescription = tr("更多"),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             account.isLoggedIn -> LoginBadge(isLoggedIn = true)
             clickable -> Text(
-                text = "登录",
+                text = tr("登录"),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -580,7 +582,7 @@ private fun QuotaInlineBar(quota: QuotaInfo) {
     }
     Column {
         Text(
-            text = "已用 ${formatBytes(quota.used)} / ${formatBytes(quota.total)}",
+            text = tr("已用 {0} / {1}", formatBytes(quota.used), formatBytes(quota.total)),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -115,15 +117,15 @@ fun BookmarkScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("收藏网盘链接", style = MaterialTheme.typography.titleLarge) },
+                title = { Text(tr("收藏网盘链接"), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("返回"))
                     }
                 },
                 actions = {
                     IconButton(onClick = { showAddDialog = true }) {
-                        Icon(Icons.Outlined.Add, contentDescription = "添加收藏")
+                        Icon(Icons.Outlined.Add, contentDescription = tr("添加收藏"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -237,7 +239,7 @@ private fun CategoryFilterBar(
         FilterChip(
             selected = selected == null,
             onClick = { onSelect(null) },
-            label = { Text("全部") }
+            label = { Text(tr("全部")) }
         )
         categories.forEach { cat ->
             FilterChip(
@@ -334,13 +336,13 @@ private fun EmptyBookmark(onAdd: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "还没有收藏任何网盘链接",
+            text = tr("还没有收藏任何网盘链接"),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "可在解析页点击「添加至收藏」，或点击右上角 + 手动添加",
+            text = tr("可在解析页点击「添加至收藏」，或点击右上角 + 手动添加"),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.outline,
             textAlign = TextAlign.Center
@@ -349,7 +351,7 @@ private fun EmptyBookmark(onAdd: () -> Unit) {
         Button(onClick = onAdd) {
             Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(6.dp))
-            Text("添加收藏")
+            Text(tr("添加收藏"))
         }
     }
 }
@@ -369,7 +371,7 @@ private fun AddBookmarkDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("添加收藏") },
+        title = { Text(tr("添加收藏")) },
         text = {
             Column(
                 modifier = Modifier
@@ -381,8 +383,8 @@ private fun AddBookmarkDialog(
                     value = link,
                     onValueChange = { link = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("网盘链接") },
-                    placeholder = { Text("粘贴分享链接") },
+                    label = { Text(tr("网盘链接")) },
+                    placeholder = { Text(tr("粘贴分享链接")) },
                     leadingIcon = { Icon(Icons.Outlined.Link, contentDescription = null) },
                     minLines = 2,
                     maxLines = 4,
@@ -392,17 +394,17 @@ private fun AddBookmarkDialog(
                     value = title,
                     onValueChange = { title = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("标题（可选）") },
+                    label = { Text(tr("标题（可选）")) },
                     singleLine = true,
                     shape = MaterialTheme.shapes.large
                 )
                 Text(
-                    text = "为保护隐私，收藏只保存链接，并会移除链接或分享文案中的提取码；使用时请在解析页输入。",
+                    text = tr("为保护隐私，收藏只保存链接，并会移除链接或分享文案中的提取码；使用时请在解析页输入。"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "分类",
+                    text = tr("分类"),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -422,7 +424,7 @@ private fun AddBookmarkDialog(
                     value = customCategory,
                     onValueChange = { customCategory = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("自定义分类（可选）") },
+                    label = { Text(tr("自定义分类（可选）")) },
                     singleLine = true,
                     shape = MaterialTheme.shapes.large
                 )
@@ -438,10 +440,10 @@ private fun AddBookmarkDialog(
                         customCategory.ifBlank { selectedCategory }
                     )
                 }
-            ) { Text("收藏") }
+            ) { Text(tr("收藏")) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(tr("取消")) }
         }
     )
 }
@@ -463,7 +465,7 @@ internal fun AddToBookmarkDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("添加至收藏") },
+        title = { Text(tr("添加至收藏")) },
         text = {
             Column(
                 modifier = Modifier
@@ -475,12 +477,12 @@ internal fun AddToBookmarkDialog(
                     value = titleInput,
                     onValueChange = { titleInput = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("标题（可选）") },
+                    label = { Text(tr("标题（可选）")) },
                     singleLine = true,
                     shape = MaterialTheme.shapes.large
                 )
                 Text(
-                    text = "分类",
+                    text = tr("分类"),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -498,7 +500,7 @@ internal fun AddToBookmarkDialog(
                     FilterChip(
                         selected = isCustom,
                         onClick = { selectedCategory = CUSTOM_CATEGORY },
-                        label = { Text("自定义") }
+                        label = { Text(tr("自定义")) }
                     )
                 }
                 AnimatedVisibility(
@@ -510,7 +512,7 @@ internal fun AddToBookmarkDialog(
                         value = customCategory,
                         onValueChange = { customCategory = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("自定义分类") },
+                        label = { Text(tr("自定义分类")) },
                         singleLine = true,
                         shape = MaterialTheme.shapes.large
                     )
@@ -526,10 +528,10 @@ internal fun AddToBookmarkDialog(
                         if (isCustom) customCategory.trim() else selectedCategory
                     )
                 }
-            ) { Text("收藏") }
+            ) { Text(tr("收藏")) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(tr("取消")) }
         }
     )
 }
@@ -548,7 +550,7 @@ private fun EditCategoryDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("修改分类") },
+        title = { Text(tr("修改分类")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 FlowRow(
@@ -567,7 +569,7 @@ private fun EditCategoryDialog(
                     value = customCategory,
                     onValueChange = { customCategory = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("自定义分类（可选）") },
+                    label = { Text(tr("自定义分类（可选）")) },
                     singleLine = true,
                     shape = MaterialTheme.shapes.large
                 )
@@ -575,11 +577,11 @@ private fun EditCategoryDialog(
         },
         confirmButton = {
             Button(onClick = { onConfirm(customCategory.ifBlank { selectedCategory }) }) {
-                Text("确定")
+                Text(tr("确定"))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(tr("取消")) }
         }
     )
 }
@@ -608,17 +610,17 @@ private fun BookmarkMenuDialog(
                 TextButton(onClick = onResolve, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Outlined.Link, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("解析")
+                    Text(tr("解析"))
                 }
                 TextButton(onClick = onCopy, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Outlined.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("复制链接")
+                    Text(tr("复制链接"))
                 }
                 TextButton(onClick = onEditCategory, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("修改分类")
+                    Text(tr("修改分类"))
                 }
                 TextButton(onClick = onDelete, modifier = Modifier.fillMaxWidth()) {
                     Icon(
@@ -628,13 +630,13 @@ private fun BookmarkMenuDialog(
                         tint = MaterialTheme.colorScheme.error
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("删除", color = MaterialTheme.colorScheme.error)
+                    Text(tr("删除"), color = MaterialTheme.colorScheme.error)
                 }
             }
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(tr("取消")) }
         }
     )
 }

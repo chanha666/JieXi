@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import android.content.ClipboardManager
 import android.content.Context
 import androidx.activity.compose.BackHandler
@@ -73,7 +75,7 @@ fun ResolveScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 2.dp)
                 Spacer(Modifier.height(16.dp))
-                Text("正在读取分享内容…", style = MaterialTheme.typography.bodyLarge)
+                Text(tr("正在读取分享内容…"), style = MaterialTheme.typography.bodyLarge)
             }
         }
         else -> Column(
@@ -82,27 +84,27 @@ fun ResolveScreen(
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             Spacer(Modifier.height(8.dp))
-            Text("一个链接，\n从这里开始。", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.SemiBold)
-            Text("视频或网盘分享，粘贴后自动识别。", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(tr("一个链接，\n从这里开始。"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.SemiBold)
+            Text(tr("视频或网盘分享，粘贴后自动识别。"), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))
             OutlinedTextField(
                 value = link,
                 onValueChange = { link = it; pwd = "" },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("粘贴链接，也可以粘贴整段分享文字") },
+                placeholder = { Text(tr("粘贴链接，也可以粘贴整段分享文字")) },
                 minLines = 3, maxLines = 6,
                 shape = MaterialTheme.shapes.large,
                 trailingIcon = {
                     if (link.isNotEmpty()) IconButton(onClick = { link = ""; pwd = "" }) {
-                        Icon(Icons.Outlined.Close, "清空链接")
+                        Icon(Icons.Outlined.Close, tr("清空链接"))
                     }
                 }
             )
             if (parsed != null) OutlinedTextField(
                 value = pwd,
                 onValueChange = { pwd = it },
-                label = { Text("提取码（可选）") },
-                placeholder = { Text(parsed.pwd?.let { "已从链接识别" } ?: "分享有提取码时填写") },
+                label = { Text(tr("提取码（可选）")) },
+                placeholder = { Text(parsed.pwd?.let { tr("已从链接识别") } ?: tr("分享有提取码时填写")) },
                 singleLine = true, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium
             )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -116,7 +118,7 @@ fun ResolveScreen(
                         else { link = text; pwd = "" }
                     },
                     modifier = Modifier.heightIn(min = 52.dp), shape = MaterialTheme.shapes.medium
-                ) { Icon(Icons.Outlined.ContentPaste, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("粘贴") }
+                ) { Icon(Icons.Outlined.ContentPaste, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(tr("粘贴")) }
                 Button(
                     enabled = link.isNotBlank(),
                     onClick = {
@@ -128,14 +130,14 @@ fun ResolveScreen(
                         }
                     },
                     modifier = Modifier.weight(1f).heightIn(min = 52.dp), shape = MaterialTheme.shapes.medium
-                ) { Text("开始解析") }
+                ) { Text(tr("开始解析")) }
             }
             if (s is ResolveUiState.Error) {
                 Surface(color = MaterialTheme.colorScheme.errorContainer, shape = MaterialTheme.shapes.medium) {
                     Column(Modifier.fillMaxWidth().padding(16.dp)) {
                         Text(s.message, color = MaterialTheme.colorScheme.onErrorContainer, style = MaterialTheme.typography.bodyMedium)
                         if (s.message.contains("登录") || s.message.contains("账号")) {
-                            TextButton(onClick = onAccounts) { Text("管理对应网盘账号") }
+                            TextButton(onClick = onAccounts) { Text(tr("管理对应网盘账号")) }
                         }
                     }
                 }
@@ -146,12 +148,12 @@ fun ResolveScreen(
 
     if (viewModel.isFetchingDownloadLink) AlertDialog(
         onDismissRequest = {}, confirmButton = {},
-        title = { Text("准备下载") },
+        title = { Text(tr("准备下载")) },
         text = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
                 Spacer(Modifier.width(12.dp))
-                Text("正在获取可用的下载链接…")
+                Text(tr("正在获取可用的下载链接…"))
             }
         }
     )
@@ -180,11 +182,11 @@ private fun RecentDownloads(onDownloads: () -> Unit) {
     }).sortedByDescending { it.first }.take(3)
     Spacer(Modifier.height(12.dp))
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text("最近任务", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-        TextButton(onClick = onDownloads) { Text("查看全部") }
+        Text(tr("最近任务"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+        TextButton(onClick = onDownloads) { Text(tr("查看全部")) }
     }
     if (recent.isEmpty()) {
-        Text("还没有下载任务。添加第一个链接，就从上面开始。",
+        Text(tr("还没有下载任务。添加第一个链接，就从上面开始。"),
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     } else recent.forEach { (_, title, status) ->
         Column(Modifier.fillMaxWidth()) {

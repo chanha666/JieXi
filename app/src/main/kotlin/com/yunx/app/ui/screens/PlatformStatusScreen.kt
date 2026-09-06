@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -34,20 +36,20 @@ fun PlatformStatusScreen(scrollBehavior: TopAppBarScrollBehavior, configured: Ma
     Column(Modifier.fillMaxSize()) {
         Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), shape = RoundedCornerShape(16.dp)) {
             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.HealthAndSafety, "诊断中心")
-                Spacer(Modifier.width(12.dp)); Column(Modifier.weight(1f)) { Text("诊断中心", fontWeight = FontWeight.SemiBold); Text("检测网络可达性与本机授权状态", style = MaterialTheme.typography.bodySmall) }
+                Icon(Icons.Outlined.HealthAndSafety, tr("诊断中心"))
+                Spacer(Modifier.width(12.dp)); Column(Modifier.weight(1f)) { Text(tr("诊断中心"), fontWeight = FontWeight.SemiBold); Text(tr("检测网络可达性与本机授权状态"), style = MaterialTheme.typography.bodySmall) }
                 Button(enabled = !running, onClick = {
                     running = true; checks = checks.map { it.copy(result = "检测中") }
                     scope.launch { checks = checks.map { item -> item.copy(result = withContext(Dispatchers.IO) { runCatching { (URL(item.endpoint).openConnection().apply { connectTimeout = 5000; readTimeout = 5000 }).connect(); "网络正常" }.getOrDefault("网络不可达") }) }; running = false }
-                }) { Text(if (running) "检测中…" else "开始检测") }
+                }) { Text(if (running) tr("检测中…") else tr("开始检测")) }
             }
         }
-        Text("适配状态统一标记为“实验”，只有真实账号和样本验收后才会升级为“稳定”。", modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), style = MaterialTheme.typography.bodySmall)
+        Text(tr("适配状态统一标记为“实验”，只有真实账号和样本验收后才会升级为“稳定”。"), modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), style = MaterialTheme.typography.bodySmall)
         LazyColumn(Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(checks, key = { it.name }) { item ->
                 Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(item.name, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f)); Text("实验", color = MaterialTheme.colorScheme.tertiary)
-                    Spacer(Modifier.width(14.dp)); Text(if (item.configured) "账号待验证" else "未登录", style = MaterialTheme.typography.bodySmall)
+                    Text(item.name, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f)); Text(tr("实验"), color = MaterialTheme.colorScheme.tertiary)
+                    Spacer(Modifier.width(14.dp)); Text(if (item.configured) tr("账号待验证") else tr("未登录"), style = MaterialTheme.typography.bodySmall)
                     Spacer(Modifier.width(14.dp)); Text(item.result, style = MaterialTheme.typography.bodySmall)
                 } }
             }

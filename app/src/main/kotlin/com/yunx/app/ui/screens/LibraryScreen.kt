@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,13 +30,13 @@ fun LibraryScreen(scrollBehavior: TopAppBarScrollBehavior, viewModel: HistoryVie
     val items by viewModel.items.collectAsState()
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("最近解析", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            TextButton(onClick = viewModel::clear, enabled = items.isNotEmpty()) { Text("清空") }
+            Text(tr("最近解析"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+            TextButton(onClick = viewModel::clear, enabled = items.isNotEmpty()) { Text(tr("清空")) }
         }
         if (items.isEmpty()) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Outlined.History, "无历史记录", modifier = Modifier.size(40.dp))
-                Spacer(Modifier.height(10.dp)); Text("还没有解析记录"); Text("提取码不会保存在历史中", style = MaterialTheme.typography.bodySmall)
+                Icon(Icons.Outlined.History, tr("无历史记录"), modifier = Modifier.size(40.dp))
+                Spacer(Modifier.height(10.dp)); Text(tr("还没有解析记录")); Text(tr("提取码不会保存在历史中"), style = MaterialTheme.typography.bodySmall)
             }
         } else LazyColumn(
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -44,10 +46,10 @@ fun LibraryScreen(scrollBehavior: TopAppBarScrollBehavior, viewModel: HistoryVie
                 Card(Modifier.fillMaxWidth().clickable { onResolve(item.link) }, shape = RoundedCornerShape(16.dp)) {
                     Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text(item.title.ifBlank { "未命名分享" }, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
+                            Text(item.title.ifBlank { tr("未命名分享") }, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
                             Text("${item.platform} · ${SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(item.createdAt))}", style = MaterialTheme.typography.bodySmall)
                         }
-                        IconButton(onClick = { viewModel.delete(item.id) }) { Icon(Icons.Outlined.DeleteOutline, "删除历史记录") }
+                        IconButton(onClick = { viewModel.delete(item.id) }) { Icon(Icons.Outlined.DeleteOutline, tr("删除历史记录")) }
                     }
                 }
             }

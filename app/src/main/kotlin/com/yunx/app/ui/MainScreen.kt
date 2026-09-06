@@ -1,5 +1,7 @@
 package com.yunx.app.ui
 
+import com.yunx.app.ui.i18n.tr
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -601,10 +603,10 @@ fun MainScreen(sharedText: String = "", initialDestination: String = "", onShare
             title = {
                 Text(
                     text = when {
-                        hasMediaPanel && mediaPanel == "tools" -> "媒体小工具"
-                        hasMediaPanel && mediaPanel == "settings" -> "视频下载偏好"
-                        currentTab == MainTab.Resolve && mediaLink != null -> "视频解析"
-                        else -> currentTab.title
+                        hasMediaPanel && mediaPanel == "tools" -> tr("媒体小工具")
+                        hasMediaPanel && mediaPanel == "settings" -> tr("视频下载偏好")
+                        currentTab == MainTab.Resolve && mediaLink != null -> tr("视频解析")
+                        else -> tr(currentTab.title)
                     },
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold
@@ -618,7 +620,7 @@ fun MainScreen(sharedText: String = "", initialDestination: String = "", onShare
                             hasMediaPanel -> mediaPanel = ""
                             else -> currentTab = MainTab.Mine
                         }
-                    }) { Icon(Icons.Outlined.ArrowBack, "返回") }
+                    }) { Icon(Icons.Outlined.ArrowBack, tr("返回")) }
                 }
             },
             scrollBehavior = scrollBehavior,
@@ -854,10 +856,10 @@ fun MainScreen(sharedText: String = "", initialDestination: String = "", onShare
     if (showBatteryGuide) {
         AlertDialog(
             onDismissRequest = { showBatteryGuide = false },
-            title = { Text("保持后台下载") },
+            title = { Text(tr("保持后台下载")) },
             text = {
                 Text(
-                    text = "「锁屏后保持下载」已开启，但应用尚未加入「忽略电池优化」白名单，息屏后可能被系统中断下载。是否前往系统设置？",
+                    text = tr("「锁屏后保持下载」已开启，但应用尚未加入「忽略电池优化」白名单，息屏后可能被系统中断下载。是否前往系统设置？"),
                     style = MaterialTheme.typography.bodyMedium
                 )
             },
@@ -871,10 +873,10 @@ fun MainScreen(sharedText: String = "", initialDestination: String = "", onShare
                             )
                         }
                     }
-                ) { Text("前往设置") }
+                ) { Text(tr("前往设置")) }
             },
             dismissButton = {
-                TextButton(onClick = { showBatteryGuide = false }) { Text("暂不") }
+                TextButton(onClick = { showBatteryGuide = false }) { Text(tr("暂不")) }
             }
         )
     }
@@ -932,10 +934,10 @@ private fun MainBottomBar(
                 icon = {
                     Icon(
                         imageVector = if (currentTab == tab) tab.selectedIcon else tab.unselectedIcon,
-                        contentDescription = tab.title
+                        contentDescription = tr(tab.title)
                     )
                 },
-                label = { Text(tab.title) },
+                label = { Text(tr(tab.title)) },
                 alwaysShowLabel = true
             )
         }
@@ -958,10 +960,10 @@ private fun MainNavigationRail(
                 icon = {
                     Icon(
                         imageVector = if (currentTab == tab) tab.selectedIcon else tab.unselectedIcon,
-                        contentDescription = tab.title
+                        contentDescription = tr(tab.title)
                     )
                 },
-                label = { Text(tab.title) },
+                label = { Text(tr(tab.title)) },
                 alwaysShowLabel = true
             )
         }

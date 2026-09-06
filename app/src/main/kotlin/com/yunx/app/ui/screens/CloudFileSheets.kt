@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -212,7 +214,7 @@ private fun ActionMenu(
                     maxLines = 1
                 )
                 Text(
-                    text = if (file.isdir) "文件夹" else "文件",
+                    text = if (file.isdir) tr("文件夹") else tr("文件"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -369,7 +371,7 @@ private fun MoveStep(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            "当前目录没有子文件夹，可直接移动到此处",
+                            tr("当前目录没有子文件夹，可直接移动到此处"),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -409,7 +411,7 @@ private fun MoveStep(
             } else {
                 Icon(Icons.Outlined.DriveFileMove, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("移动到此处（$dirName）")
+                Text(tr("移动到此处（{0}）", dirName))
             }
         }
     }
@@ -436,13 +438,13 @@ private fun ShareStep(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("提取码", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(tr("提取码"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(6.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
                 selected = !withPassword,
                 onClick = { withPassword = false },
-                label = { Text("无提取码") },
+                label = { Text(tr("无提取码")) },
                 colors = FilterChipDefaults.filterChipColors()
             )
             FilterChip(
@@ -451,7 +453,7 @@ private fun ShareStep(
                     withPassword = true
                     if (passcode.isBlank()) passcode = randomPasscode()
                 },
-                label = { Text("设置提取码") },
+                label = { Text(tr("设置提取码")) },
                 colors = FilterChipDefaults.filterChipColors()
             )
         }
@@ -461,7 +463,7 @@ private fun ShareStep(
                 value = passcode,
                 onValueChange = { passcode = it.take(4).filter { c -> c.isLetterOrDigit() } },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("4 位提取码") },
+                label = { Text(tr("4 位提取码")) },
                 singleLine = true,
                 shape = MaterialTheme.shapes.large
             )
@@ -469,7 +471,7 @@ private fun ShareStep(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("有效期", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(tr("有效期"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(6.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             expireOptions.forEach { (name, value) ->
@@ -503,7 +505,7 @@ private fun ShareStep(
             } else {
                 Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("创建分享")
+                Text(tr("创建分享"))
             }
         }
     }
@@ -530,7 +532,7 @@ private fun RenameStep(
             value = name,
             onValueChange = { name = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("新文件名") },
+            label = { Text(tr("新文件名")) },
             singleLine = true,
             shape = MaterialTheme.shapes.large
         )
@@ -549,7 +551,7 @@ private fun RenameStep(
                 .fillMaxWidth()
                 .height(50.dp)
         ) {
-            Text("确认重命名")
+            Text(tr("确认重命名"))
         }
     }
 }
@@ -565,8 +567,8 @@ private fun DeleteStep(
 ) {
     AlertDialog(
         onDismissRequest = { if (!operating) onBack() },
-        title = { Text("删除文件") },
-        text = { Text("确定要删除「${file.fname}」吗？删除后将移入回收站。") },
+        title = { Text(tr("删除文件")) },
+        text = { Text(tr("确定要删除「{0}」吗？删除后将移入回收站。", file.fname)) },
         confirmButton = {
             TextButton(
                 onClick = {
@@ -575,11 +577,11 @@ private fun DeleteStep(
                 },
                 enabled = !operating
             ) {
-                Text("删除", color = MaterialTheme.colorScheme.error)
+                Text(tr("删除"), color = MaterialTheme.colorScheme.error)
             }
         },
         dismissButton = {
-            TextButton(onClick = onBack) { Text("取消") }
+            TextButton(onClick = onBack) { Text(tr("取消")) }
         }
     )
 }
@@ -611,7 +613,7 @@ internal fun ShareResultDialog(
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("分享成功") },
+        title = { Text(tr("分享成功")) },
         text = {
             Column {
                 // 等宽展示分享文案，便于整段复制
@@ -624,7 +626,7 @@ internal fun ShareResultDialog(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "有效期：" + expireLabel(info.expiredType),
+                    text = tr("有效期：") + expireLabel(info.expiredType),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -642,11 +644,11 @@ internal fun ShareResultDialog(
             ) {
                 Icon(Icons.Outlined.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("复制全部")
+                Text(tr("复制全部"))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("完成") }
+            TextButton(onClick = onDismiss) { Text(tr("完成")) }
         }
     )
 }
@@ -658,7 +660,7 @@ private fun StepHeader(title: String, subtitle: String, onBack: () -> Unit) {
         IconButton(onClick = onBack) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "返回"
+                contentDescription = tr("返回")
             )
         }
         Spacer(modifier = Modifier.width(4.dp))
@@ -801,12 +803,12 @@ private fun BatchMenu(
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "批量操作",
+                    text = tr("批量操作"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "已选 $count 项",
+                    text = tr("已选 {0} 项", count),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -869,13 +871,13 @@ private fun BatchShareStep(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("提取码", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(tr("提取码"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(6.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
                 selected = !withPassword,
                 onClick = { withPassword = false },
-                label = { Text("无提取码") },
+                label = { Text(tr("无提取码")) },
                 colors = FilterChipDefaults.filterChipColors()
             )
             FilterChip(
@@ -884,7 +886,7 @@ private fun BatchShareStep(
                     withPassword = true
                     if (passcode.isBlank()) passcode = randomPasscode()
                 },
-                label = { Text("设置提取码") },
+                label = { Text(tr("设置提取码")) },
                 colors = FilterChipDefaults.filterChipColors()
             )
         }
@@ -894,7 +896,7 @@ private fun BatchShareStep(
                 value = passcode,
                 onValueChange = { passcode = it.take(4).filter { c -> c.isLetterOrDigit() } },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("4 位提取码") },
+                label = { Text(tr("4 位提取码")) },
                 singleLine = true,
                 shape = MaterialTheme.shapes.large
             )
@@ -902,7 +904,7 @@ private fun BatchShareStep(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("有效期", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(tr("有效期"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(6.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             expireOptions.forEach { (name, value) ->
@@ -936,7 +938,7 @@ private fun BatchShareStep(
             } else {
                 Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("创建分享")
+                Text(tr("创建分享"))
             }
         }
     }
@@ -1006,7 +1008,7 @@ private fun BatchMoveStep(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            "当前目录没有子文件夹，可直接移动到此处",
+                            tr("当前目录没有子文件夹，可直接移动到此处"),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -1046,7 +1048,7 @@ private fun BatchMoveStep(
             } else {
                 Icon(Icons.Outlined.DriveFileMove, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("移动到此处（$dirName）")
+                Text(tr("移动到此处（{0}）", dirName))
             }
         }
     }
@@ -1063,8 +1065,8 @@ private fun BatchDeleteStep(
 ) {
     AlertDialog(
         onDismissRequest = { if (!operating) onBack() },
-        title = { Text("删除文件") },
-        text = { Text("确定要删除选中的 $count 项吗？删除后将移入回收站。") },
+        title = { Text(tr("删除文件")) },
+        text = { Text(tr("确定要删除选中的 {0} 项吗？删除后将移入回收站。", count)) },
         confirmButton = {
             TextButton(
                 onClick = {
@@ -1073,11 +1075,11 @@ private fun BatchDeleteStep(
                 },
                 enabled = !operating
             ) {
-                Text("删除", color = MaterialTheme.colorScheme.error)
+                Text(tr("删除"), color = MaterialTheme.colorScheme.error)
             }
         },
         dismissButton = {
-            TextButton(onClick = onBack) { Text("取消") }
+            TextButton(onClick = onBack) { Text(tr("取消")) }
         }
     )
 }

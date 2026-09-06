@@ -1,5 +1,7 @@
 package com.yunx.desktop
 
+import com.yunx.desktop.i18n.tr
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -58,8 +60,8 @@ internal fun CloudWorkspace(controller: DesktopAppController) {
     }
     Column(Modifier.fillMaxSize().padding(28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("我的网盘文件", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
-            TextButton(onClick = { controller.page = AppPage.ACCOUNTS }) { Text("管理账号") }
+            Text(tr("我的网盘文件"), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
+            TextButton(onClick = { controller.page = AppPage.ACCOUNTS }) { Text(tr("管理账号")) }
             Box {
                 OutlinedButton(onClick = { platformMenu = true }, enabled = !busy) { Text(DesktopResolver.platformName(platform)) }
                 DropdownMenu(platformMenu, { platformMenu = false }) {
@@ -69,25 +71,25 @@ internal fun CloudWorkspace(controller: DesktopAppController) {
                 }
             }
         }
-        quota?.let { Text("已用 ${cloudBytes(it.used)} / 共 ${cloudBytes(it.total)}", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        quota?.let { Text(tr("已用 {0} / 共 {1}", cloudBytes(it.used), cloudBytes(it.total)), color = MaterialTheme.colorScheme.onSurfaceVariant) }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { path = path.dropLast(1) }, enabled = path.size > 1 && !busy) { Text("上一级") }
+            TextButton(onClick = { path = path.dropLast(1) }, enabled = path.size > 1 && !busy) { Text(tr("上一级")) }
             Text(path.joinToString(" / ") { it.second }, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            TextButton(onClick = { reload++ }, enabled = !busy) { Text("刷新") }
+            TextButton(onClick = { reload++ }, enabled = !busy) { Text(tr("刷新")) }
         }
-        OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), placeholder = { Text("搜索当前目录") }, singleLine = true)
+        OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), placeholder = { Text(tr("搜索当前目录")) }, singleLine = true)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(selected.isNotEmpty() && selected.size == files.size, { selected = if(it) files.map { f -> f.fid }.toSet() else emptySet() }, enabled = !busy)
-            Text("已选 ${selected.size}", Modifier.weight(1f))
-            TextButton(onClick = { operate { controller.downloadCloud(platform, service.collectFiles(platform,picked)) } }, enabled = picked.isNotEmpty() && !busy) { Text("下载") }
-            TextButton(onClick = { value = picked.single().fname; action = "rename" }, enabled = picked.size == 1 && !busy) { Text("重命名") }
-            TextButton(onClick = { action = "move" }, enabled = picked.isNotEmpty() && !busy) { Text("移动") }
-            TextButton(onClick = { value = ""; action = "share" }, enabled = picked.isNotEmpty() && !busy) { Text("分享") }
-            TextButton(onClick = { action = "delete" }, enabled = picked.isNotEmpty() && !busy) { Text("删除") }
+            Text(tr("已选 {0}", selected.size), Modifier.weight(1f))
+            TextButton(onClick = { operate { controller.downloadCloud(platform, service.collectFiles(platform,picked)) } }, enabled = picked.isNotEmpty() && !busy) { Text(tr("下载")) }
+            TextButton(onClick = { value = picked.single().fname; action = "rename" }, enabled = picked.size == 1 && !busy) { Text(tr("重命名")) }
+            TextButton(onClick = { action = "move" }, enabled = picked.isNotEmpty() && !busy) { Text(tr("移动")) }
+            TextButton(onClick = { value = ""; action = "share" }, enabled = picked.isNotEmpty() && !busy) { Text(tr("分享")) }
+            TextButton(onClick = { action = "delete" }, enabled = picked.isNotEmpty() && !busy) { Text(tr("删除")) }
         }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
-        if (!busy && files.isEmpty() && message == null) Text("此目录暂无文件")
+        if (!busy && files.isEmpty() && message == null) Text(tr("此目录暂无文件"))
         LazyColumn(Modifier.weight(1f)) {
             items(files.filter { it.fname.contains(query, true) }, key = { it.fid }) { file ->
                 Row(Modifier.fillMaxWidth().clickable(enabled = !busy) {
@@ -97,7 +99,7 @@ internal fun CloudWorkspace(controller: DesktopAppController) {
                     Checkbox(file.fid in selected, { selected = if(it) selected + file.fid else selected - file.fid }, enabled = !busy)
                     Column(Modifier.weight(1f)) {
                         Text(file.fname, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(if(file.isdir) "文件夹 · 点击打开" else cloudBytes(file.fsize), style = MaterialTheme.typography.bodySmall)
+                        Text(if(file.isdir) tr("文件夹 · 点击打开") else cloudBytes(file.fsize), style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -109,15 +111,15 @@ internal fun CloudWorkspace(controller: DesktopAppController) {
     }
     if (action in setOf("rename", "share", "delete")) AlertDialog(
         onDismissRequest = { if(!busy) action = "" },
-        title = { Text(when(action) { "rename" -> "重命名"; "share" -> "创建分享"; else -> "删除网盘文件" }) },
+        title = { Text(when(action) { "rename" -> tr("重命名"); "share" -> tr("创建分享"); else -> tr("删除网盘文件") }) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if(action == "delete") Text("确定从网盘删除所选 ${picked.size} 项？这会影响远端文件，而不只是本地记录。")
+                if(action == "delete") Text(tr("确定从网盘删除所选 {0} 项？这会影响远端文件，而不只是本地记录。", picked.size))
                 else {
-                    OutlinedTextField(value, { value = it }, label = { Text(if(action == "rename") "新名称" else "4 位提取码（可选）") }, singleLine = true)
+                    OutlinedTextField(value, { value = it }, label = { Text(if(action == "rename") tr("新名称") else tr("4 位提取码（可选）")) }, singleLine = true)
                     if(action == "share") {
-                        Row { listOf(1,7,30,0).forEach { n -> TextButton(onClick = { days = n }) { Text((if(days == n) "✓ " else "") + if(n == 0) "永久" else "${n}天") } } }
-                        Text("百度需要 4 位提取码；139 使用平台生成的提取码。")
+                        Row { listOf(1,7,30,0).forEach { n -> TextButton(onClick = { days = n }) { Text((if(days == n) "✓ " else "") + if(n == 0) tr("永久") else tr("{0}天", n)) } } }
+                        Text(tr("百度需要 4 位提取码；139 使用平台生成的提取码。"))
                     }
                 }
             }
@@ -128,13 +130,13 @@ internal fun CloudWorkspace(controller: DesktopAppController) {
                 "share" -> operate { shareResult = service.share(platform, picked, days, value) }
                 "delete" -> operate { service.delete(platform, picked) }
             }
-        }) { Text(if(busy) "处理中…" else "确认") } },
-        dismissButton = { TextButton(onClick = { action = "" }, enabled = !busy) { Text("取消") } }
+        }) { Text(if(busy) tr("处理中…") else tr("确认")) } },
+        dismissButton = { TextButton(onClick = { action = "" }, enabled = !busy) { Text(tr("取消")) } }
     )
-    shareResult?.let { result -> AlertDialog(onDismissRequest = { shareResult = null }, title = { Text("分享已创建") },
-        text = { androidx.compose.foundation.text.selection.SelectionContainer { Text(result.shareUrl + "\n提取码：" + result.passcode.ifBlank { "无" }) } },
-        confirmButton = { Button(onClick = { Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(result.shareUrl + " 提取码：" + result.passcode), null) }) { Text("复制链接") } },
-        dismissButton = { TextButton(onClick = { shareResult = null }) { Text("关闭") } }) }
+    shareResult?.let { result -> AlertDialog(onDismissRequest = { shareResult = null }, title = { Text(tr("分享已创建")) },
+        text = { androidx.compose.foundation.text.selection.SelectionContainer { Text(result.shareUrl + tr("\n提取码：") + result.passcode.ifBlank { tr("无") }) } },
+        confirmButton = { Button(onClick = { Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(result.shareUrl + " 提取码：" + result.passcode), null) }) { Text(tr("复制链接")) } },
+        dismissButton = { TextButton(onClick = { shareResult = null }) { Text(tr("关闭")) } }) }
 }
 
 @Composable
@@ -150,16 +152,16 @@ internal fun CloudFolderDialog(platform: SharePlatform, service: DesktopCloudSer
         catch(e: Exception) { error = e.message ?: "读取失败" }
         finally { busy = false }
     }
-    AlertDialog(onDismissRequest = onDismiss, title = { Text("选择目标文件夹") },
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(tr("选择目标文件夹")) },
         text = { Column(Modifier.heightIn(max = 380.dp)) {
             Text(path.joinToString(" / ") { it.second })
-            TextButton(onClick = { path = path.dropLast(1) }, enabled = path.size > 1 && !busy) { Text("上一级") }
+            TextButton(onClick = { path = path.dropLast(1) }, enabled = path.size > 1 && !busy) { Text(tr("上一级")) }
             if(busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             error?.let { Text(it) }
             LazyColumn { items(folders, key = { it.fid }) { f -> TextButton(onClick = { path = path + (DesktopCloudService.directory(platform, f) to f.fname) }, enabled = !busy) { Text(f.fname) } } }
         } },
-        confirmButton = { Button(onClick = { onChoose(path.last().first); onDismiss() }, enabled = !busy && error == null) { Text("选择此文件夹") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } })
+        confirmButton = { Button(onClick = { onChoose(path.last().first); onDismiss() }, enabled = !busy && error == null) { Text(tr("选择此文件夹")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("取消")) } })
 }
 
 private fun cloudBytes(bytes: Long): String = if(bytes < 0) "大小未知" else when {

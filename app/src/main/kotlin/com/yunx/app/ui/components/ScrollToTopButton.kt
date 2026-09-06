@@ -1,5 +1,7 @@
 package com.yunx.app.ui.components
 
+import com.yunx.app.ui.i18n.tr
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -61,7 +63,7 @@ internal fun ScrollToTopButton(
         ) {
             Icon(
                 imageVector = Icons.Outlined.KeyboardArrowUp,
-                contentDescription = "返回顶部",
+                contentDescription = tr("返回顶部"),
                 modifier = Modifier.padding(bottom = 2.dp) // 视觉微调：箭头视觉居中
             )
         }

@@ -1,5 +1,7 @@
 package com.yunx.app.ui.login
 
+import com.yunx.app.ui.i18n.tr
+
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
@@ -86,10 +88,10 @@ fun XunleiLoginScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("迅雷网盘登录", style = MaterialTheme.typography.titleLarge) },
+                title = { Text(tr("迅雷网盘登录"), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = closeLogin) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("返回"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -105,16 +107,16 @@ fun XunleiLoginScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = if (step?.needSms == true) "短信验证" else "登录迅雷网盘",
+                text = if (step?.needSms == true) tr("短信验证") else tr("登录迅雷网盘"),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
             )
             Text(
                 text = if (step?.needSms == true) {
-                    if (smsSent) "账号密码登录触发安全验证，验证码已发送至 ${username}"
-                    else "账号密码登录触发安全验证，请点击下方「发送验证码」"
+                    if (smsSent) tr("账号密码登录触发安全验证，验证码已发送至 {0}", username)
+                    else tr("账号密码登录触发安全验证，请点击下方「发送验证码」")
                 } else {
-                    "使用迅雷账号登录，支持解析与下载分享文件"
+                    tr("使用迅雷账号登录，支持解析与下载分享文件")
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -125,7 +127,7 @@ fun XunleiLoginScreen(
                     value = username,
                     onValueChange = { username = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("手机号 / 邮箱") },
+                    label = { Text(tr("手机号 / 邮箱")) },
                     leadingIcon = { Icon(Icons.Outlined.Phone, contentDescription = null) },
                     singleLine = true,
                     shape = MaterialTheme.shapes.large
@@ -134,13 +136,13 @@ fun XunleiLoginScreen(
                     value = password,
                     onValueChange = { password = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("密码") },
+                    label = { Text(tr("密码")) },
                     leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
                                 imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                                contentDescription = if (passwordVisible) "隐藏密码" else "显示密码"
+                                contentDescription = if (passwordVisible) tr("隐藏密码") else tr("显示密码")
                             )
                         }
                     },
@@ -153,13 +155,13 @@ fun XunleiLoginScreen(
                     onClick = { viewModel.login(username, password) },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     enabled = username.isNotBlank() && password.isNotBlank() && !isSending
-                ) { Text("登录") }
+                ) { Text(tr("登录")) }
             } else {
                 OutlinedTextField(
                     value = smsCode,
                     onValueChange = { smsCode = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("短信验证码") },
+                    label = { Text(tr("短信验证码")) },
                     leadingIcon = { Icon(Icons.Outlined.Shield, contentDescription = null) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
@@ -176,7 +178,7 @@ fun XunleiLoginScreen(
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     enabled = smsCode.isNotBlank()
-                ) { Text("验证并登录") }
+                ) { Text(tr("验证并登录")) }
                 if (!smsSent) {
                     // 进入界面不会自动发送验证码：主按钮「发送验证码」提示用户主动获取
                     FilledTonalButton(
@@ -185,7 +187,7 @@ fun XunleiLoginScreen(
                             SnackbarController.show("验证码已发送")
                         },
                         modifier = Modifier.fillMaxWidth().height(48.dp)
-                    ) { Text("发送验证码") }
+                    ) { Text(tr("发送验证码")) }
                 } else {
                     TextButton(
                         onClick = {
@@ -193,10 +195,10 @@ fun XunleiLoginScreen(
                             SnackbarController.show("验证码已发送")
                         },
                         modifier = Modifier.align(Alignment.CenterHorizontally)
-                    ) { Text("重新发送验证码") }
+                    ) { Text(tr("重新发送验证码")) }
                 }
                 Text(
-                    text = "若始终收不到短信，请确认手机号正确，或稍后重试 / 切换网络",
+                    text = tr("若始终收不到短信，请确认手机号正确，或稍后重试 / 切换网络"),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -214,13 +216,13 @@ fun XunleiLoginScreen(
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) {
                         Text(
-                            text = "短信收不到？应用内验证",
+                            text = tr("短信收不到？应用内验证"),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
                     Text(
-                        text = "应用内完成验证后，将自动重新登录",
+                        text = tr("应用内完成验证后，将自动重新登录"),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -244,7 +246,7 @@ fun XunleiLoginScreen(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
                 Text(
-                    text = "未设置密码，点我前往设置",
+                    text = tr("未设置密码，点我前往设置"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary
                 )

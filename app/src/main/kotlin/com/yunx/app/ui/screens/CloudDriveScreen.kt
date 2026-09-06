@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import com.yunx.app.ui.SnackbarController
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -158,8 +160,8 @@ fun CloudDriveScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OutlinedButton(onClick = onExit) { Text("返回") }
-                        TextButton(onClick = { viewModel.loadRoot() }) { Text("重试") }
+                        OutlinedButton(onClick = onExit) { Text(tr("返回")) }
+                        TextButton(onClick = { viewModel.loadRoot() }) { Text(tr("重试")) }
                     }
                 }
             }
@@ -187,37 +189,37 @@ fun CloudDriveScreen(
                         if (viewModel.multiSelectMode) {
                             // 多选模式：取消选择
                             IconButton(onClick = { viewModel.exitMultiSelect() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "取消选择")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("取消选择"))
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "已选 ${viewModel.selected.size} 项",
+                                    text = tr("已选 {0} 项", viewModel.selected.size),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Medium
                                 )
                                 Text(
-                                    text = if (viewModel.selected.size == s.files.size) "已全选" else "点击选择更多文件",
+                                    text = if (viewModel.selected.size == s.files.size) tr("已全选") else tr("点击选择更多文件"),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             TextButton(onClick = { viewModel.toggleSelectAll(s.files) }) {
-                                Text(if (viewModel.selected.size == s.files.size) "取消全选" else "全选")
+                                Text(if (viewModel.selected.size == s.files.size) tr("取消全选") else tr("全选"))
                             }
                         } else {
                             IconButton(onClick = onExit) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("返回"))
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "夸克网盘",
+                                    text = tr("夸克网盘"),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Medium,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = "共 ${s.files.size} 项",
+                                    text = tr("共 {0} 项", s.files.size),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -245,7 +247,7 @@ fun CloudDriveScreen(
             if (s.files.isEmpty()) {
                 item {
                     Text(
-                        text = "此目录为空",
+                        text = tr("此目录为空"),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
@@ -352,8 +354,8 @@ fun CloudDriveScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("删除文件") },
-            text = { Text("确定要删除选中的 ${viewModel.selected.size} 项吗？删除后将移入回收站。") },
+            title = { Text(tr("删除文件")) },
+            text = { Text(tr("确定要删除选中的 {0} 项吗？删除后将移入回收站。", viewModel.selected.size)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -361,11 +363,11 @@ fun CloudDriveScreen(
                         viewModel.deleteSelected()
                     }
                 ) {
-                    Text("删除", color = MaterialTheme.colorScheme.error)
+                    Text(tr("删除"), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("取消") }
+                TextButton(onClick = { showDeleteConfirm = false }) { Text(tr("取消")) }
             }
         )
     }
@@ -377,10 +379,10 @@ fun CloudDriveScreen(
             confirmButton = { },
             dismissButton = {
                 TextButton(onClick = { viewModel.cancelDownload() }) {
-                    Text("中断", color = MaterialTheme.colorScheme.error)
+                    Text(tr("中断"), color = MaterialTheme.colorScheme.error)
                 }
             },
-            title = { Text("处理中") },
+            title = { Text(tr("处理中")) },
             text = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(
@@ -389,7 +391,7 @@ fun CloudDriveScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = viewModel.folderProgress ?: "正在处理，请稍候…",
+                        text = viewModel.folderProgress ?: tr("正在处理，请稍候…"),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }

@@ -1,5 +1,7 @@
 package com.yunx.app.ui.resolve
 
+import com.yunx.app.ui.i18n.tr
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -61,7 +63,7 @@ fun DownloadLinkDialog(
         text = {
             Column {
                 Text(
-                    text = "下载直链已生成（有效期约 15-30 分钟）",
+                    text = tr("下载直链已生成（有效期约 15-30 分钟）"),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -95,7 +97,7 @@ fun DownloadLinkDialog(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "点击「开始下载」将分片多线程下载并保存到 Download 目录",
+                    text = tr("点击「开始下载」将分片多线程下载并保存到 Download 目录"),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -113,12 +115,12 @@ fun DownloadLinkDialog(
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("开始下载")
+                Text(tr("开始下载"))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("关闭")
+                Text(tr("关闭"))
             }
         },
         modifier = modifier

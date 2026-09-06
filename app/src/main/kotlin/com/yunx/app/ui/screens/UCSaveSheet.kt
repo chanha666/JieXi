@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -110,7 +112,7 @@ fun UCSaveSheet(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "转存到UC网盘",
+                        text = tr("转存到UC网盘"),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium
                     )
@@ -170,7 +172,7 @@ fun UCSaveSheet(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         TextButton(onClick = { cloudViewModel.loadRoot() }) {
-                            Text("重试")
+                            Text(tr("重试"))
                         }
                     }
                 }
@@ -185,7 +187,7 @@ fun UCSaveSheet(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "当前目录没有子文件夹，可直接转存到此目录",
+                                text = tr("当前目录没有子文件夹，可直接转存到此目录"),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
@@ -237,7 +239,7 @@ fun UCSaveSheet(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("转存到此目录（$currentDirName）")
+                    Text(tr("转存到此目录（{0}）", currentDirName))
                 }
             }
 

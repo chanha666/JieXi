@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -86,30 +88,30 @@ fun UCAccountSheet(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.size(8.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("UC网盘 · 已登录", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(tr("UC网盘 · 已登录"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
-            Text("登录信息", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(tr("登录信息"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(8.dp))
             Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    InfoRow(label = "登录时间", value = loginTime)
+                    InfoRow(label = tr("登录时间"), value = loginTime)
                     Spacer(modifier = Modifier.height(12.dp))
                     Text("Cookie", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(displayCookie, style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 15.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        if (cookieTruncated) TextButton(onClick = { showFullCookie = !showFullCookie }) { Text(if (showFullCookie) "收起" else "展开全部") }
+                        if (cookieTruncated) TextButton(onClick = { showFullCookie = !showFullCookie }) { Text(if (showFullCookie) tr("收起") else tr("展开全部")) }
                         TextButton(onClick = {
                             copyToClipboard(context, account.cookie)
                             SnackbarController.show("Cookie 已复制")
                         }) {
                             Icon(Icons.Outlined.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp)); Text("复制")
+                            Spacer(modifier = Modifier.width(4.dp)); Text(tr("复制"))
                         }
                     }
                 }
@@ -118,7 +120,7 @@ fun UCAccountSheet(
             Button(onClick = { showLogoutConfirm = true }, modifier = Modifier.fillMaxWidth().height(48.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError)) {
                 Icon(Icons.Outlined.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp)); Text("退出登录")
+                Spacer(modifier = Modifier.width(8.dp)); Text(tr("退出登录"))
             }
 
             // 复制提示（ModalBottomSheet 为独立窗口，需自带 Snackbar 宿主）
@@ -129,10 +131,10 @@ fun UCAccountSheet(
     if (showLogoutConfirm) {
         AlertDialog(
             onDismissRequest = { showLogoutConfirm = false },
-            title = { Text("退出登录") },
-            text = { Text("确定要退出当前 UC 账号吗？退出后将清除本地 Cookie。") },
-            confirmButton = { TextButton(onClick = { showLogoutConfirm = false; onLogout() }) { Text("退出", color = MaterialTheme.colorScheme.error) } },
-            dismissButton = { TextButton(onClick = { showLogoutConfirm = false }) { Text("取消") } }
+            title = { Text(tr("退出登录")) },
+            text = { Text(tr("确定要退出当前 UC 账号吗？退出后将清除本地 Cookie。")) },
+            confirmButton = { TextButton(onClick = { showLogoutConfirm = false; onLogout() }) { Text(tr("退出"), color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton(onClick = { showLogoutConfirm = false }) { Text(tr("取消")) } }
         )
     }
 }

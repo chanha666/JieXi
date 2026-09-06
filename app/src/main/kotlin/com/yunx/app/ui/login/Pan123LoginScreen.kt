@@ -1,5 +1,7 @@
 package com.yunx.app.ui.login
 
+import com.yunx.app.ui.i18n.tr
+
 import androidx.activity.compose.BackHandler
 import com.yunx.app.ui.SnackbarController
 import com.yunx.app.ui.rememberGlobalSnackbarHostState
@@ -68,10 +70,10 @@ fun Pan123LoginScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("123云盘登录", style = MaterialTheme.typography.titleLarge) },
+                title = { Text(tr("123云盘登录"), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = closeLogin) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("返回"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -87,12 +89,12 @@ fun Pan123LoginScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "登录123云盘",
+                text = tr("登录123云盘"),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
             )
             Text(
-                text = "使用 123 云盘账号登录，支持解析与下载分享文件",
+                text = tr("使用 123 云盘账号登录，支持解析与下载分享文件"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -101,7 +103,7 @@ fun Pan123LoginScreen(
                 value = username,
                 onValueChange = { username = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("手机号 / 账号") },
+                label = { Text(tr("手机号 / 账号")) },
                 leadingIcon = { Icon(Icons.Outlined.Phone, contentDescription = null) },
                 singleLine = true,
                 shape = MaterialTheme.shapes.large
@@ -110,13 +112,13 @@ fun Pan123LoginScreen(
                 value = password,
                 onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("密码") },
+                label = { Text(tr("密码")) },
                 leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                            contentDescription = if (passwordVisible) "隐藏密码" else "显示密码"
+                            contentDescription = if (passwordVisible) tr("隐藏密码") else tr("显示密码")
                         )
                     }
                 },
@@ -134,14 +136,14 @@ fun Pan123LoginScreen(
                 if (viewModel.isLoggingIn) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("登录中…")
+                    Text(tr("登录中…"))
                 } else {
-                    Text("登录")
+                    Text(tr("登录"))
                 }
             }
 
             Text(
-                text = "凭证为登录后签发的 JWT（约 90 天有效），仅用于请求 123 云盘接口",
+                text = tr("凭证为登录后签发的 JWT（约 90 天有效），仅用于请求 123 云盘接口"),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

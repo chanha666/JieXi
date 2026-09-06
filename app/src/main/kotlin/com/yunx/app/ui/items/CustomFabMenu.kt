@@ -1,5 +1,7 @@
 package com.yunx.app.ui.items
 
+import com.yunx.app.ui.i18n.tr
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -132,7 +134,7 @@ fun BoxScope.CustomFabMenu(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Icon(
                                         imageVector = Icons.Filled.Check,
-                                        contentDescription = "已选择",
+                                        contentDescription = tr("已选择"),
                                         modifier = Modifier.size(16.dp),
                                         tint = MaterialTheme.colorScheme.primary
                                     )
@@ -155,7 +157,7 @@ fun BoxScope.CustomFabMenu(
             ) {
                 Icon(
                     imageVector = if (expanded) Icons.Filled.Close else Icons.Filled.Add,
-                    contentDescription = if (expanded) "关闭菜单" else "打开菜单",
+                    contentDescription = if (expanded) tr("关闭菜单") else tr("打开菜单"),
                     modifier = Modifier
                         .size(24.dp)
                         .graphicsLayer { rotationZ = fabRotation }

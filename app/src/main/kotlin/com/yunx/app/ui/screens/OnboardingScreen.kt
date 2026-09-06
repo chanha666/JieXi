@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -22,7 +24,7 @@ fun OnboardingScreen(onFinish: () -> Unit, modifier: Modifier = Modifier) {
             Surface(color = MaterialTheme.colorScheme.background) {
                 Button(onClick = onFinish,
                     modifier = Modifier.navigationBarsPadding().padding(horizontal = 28.dp, vertical = 16.dp).fillMaxWidth().heightIn(min = 52.dp),
-                    shape = MaterialTheme.shapes.medium) { Text("开始使用") }
+                    shape = MaterialTheme.shapes.medium) { Text(tr("开始使用")) }
             }
         }
     ) { insets ->
@@ -30,13 +32,13 @@ fun OnboardingScreen(onFinish: () -> Unit, modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(24.dp)) {
             Spacer(Modifier.height(28.dp))
             Image(painterResource(R.drawable.jiexi_mark), "解析图标", Modifier.size(64.dp))
-            Text("把想保存的，\n交给解析。", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.SemiBold)
-            Text("视频、网盘分享，一个入口就够了。", style = MaterialTheme.typography.bodyLarge,
+            Text(tr("把想保存的，\n交给解析。"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.SemiBold)
+            Text(tr("视频、网盘分享，一个入口就够了。"), style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             HorizontalDivider()
-            Text("01   粘贴链接，自动识别内容", style = MaterialTheme.typography.titleMedium)
-            Text("02   下载进度，随时查看", style = MaterialTheme.typography.titleMedium)
-            Text("03   更多功能，收进「我的」", style = MaterialTheme.typography.titleMedium)
+            Text(tr("01   粘贴链接，自动识别内容"), style = MaterialTheme.typography.titleMedium)
+            Text(tr("02   下载进度，随时查看"), style = MaterialTheme.typography.titleMedium)
+            Text(tr("03   更多功能，收进「我的」"), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(16.dp))
         }
     }

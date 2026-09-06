@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import com.yunx.app.ui.SnackbarController
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -164,8 +166,8 @@ fun Pan123CloudScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            OutlinedButton(onClick = onExit) { Text("返回") }
-                            TextButton(onClick = { viewModel.loadRoot() }) { Text("重试") }
+                            OutlinedButton(onClick = onExit) { Text(tr("返回")) }
+                            TextButton(onClick = { viewModel.loadRoot() }) { Text(tr("重试")) }
                         }
                     }
                 }
@@ -192,37 +194,37 @@ fun Pan123CloudScreen(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         if (viewModel.multiSelectMode) {
                                             IconButton(onClick = { viewModel.exitMultiSelect() }) {
-                                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "取消选择")
+                                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("取消选择"))
                                             }
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text(
-                                                    text = "已选 ${viewModel.selected.size} 项",
+                                                    text = tr("已选 {0} 项", viewModel.selected.size),
                                                     style = MaterialTheme.typography.titleMedium,
                                                     fontWeight = FontWeight.Medium
                                                 )
                                                 Text(
-                                                    text = if (viewModel.selected.size == s.files.size) "已全选" else "点击选择更多文件",
+                                                    text = if (viewModel.selected.size == s.files.size) tr("已全选") else tr("点击选择更多文件"),
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
                                             TextButton(onClick = { viewModel.toggleSelectAll(s.files) }) {
-                                                Text(if (viewModel.selected.size == s.files.size) "取消全选" else "全选")
+                                                Text(if (viewModel.selected.size == s.files.size) tr("取消全选") else tr("全选"))
                                             }
                                         } else {
                                             IconButton(onClick = onExit) {
-                                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("返回"))
                                             }
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text(
-                                                    text = "123云盘",
+                                                    text = tr("123云盘"),
                                                     style = MaterialTheme.typography.titleMedium,
                                                     fontWeight = FontWeight.Medium,
                                                     maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
                                                 Text(
-                                                    text = "共 ${s.files.size} 项",
+                                                    text = tr("共 {0} 项", s.files.size),
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
@@ -248,7 +250,7 @@ fun Pan123CloudScreen(
                             if (s.files.isEmpty()) {
                                 item {
                                     Text(
-                                        text = "此目录为空",
+                                        text = tr("此目录为空"),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier
@@ -404,8 +406,8 @@ fun Pan123CloudScreen(
         val deleting = if (viewModel.multiSelectMode) "选中的 ${viewModel.selected.size} 项" else "「${viewModel.actionFile?.fname ?: ""}」"
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("删除文件") },
-            text = { Text("确定要删除$deleting 吗？删除后进入回收站。") },
+            title = { Text(tr("删除文件")) },
+            text = { Text(tr("确定要删除{0} 吗？删除后进入回收站。", deleting)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -413,11 +415,11 @@ fun Pan123CloudScreen(
                         if (viewModel.multiSelectMode) viewModel.deleteSelected() else viewModel.deleteFile()
                     }
                 ) {
-                    Text("删除", color = MaterialTheme.colorScheme.error)
+                    Text(tr("删除"), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("取消") }
+                TextButton(onClick = { showDeleteConfirm = false }) { Text(tr("取消")) }
             }
         )
     }
@@ -429,16 +431,16 @@ fun Pan123CloudScreen(
             confirmButton = { },
             dismissButton = {
                 TextButton(onClick = { viewModel.cancelDownload() }) {
-                    Text("中断", color = MaterialTheme.colorScheme.error)
+                    Text(tr("中断"), color = MaterialTheme.colorScheme.error)
                 }
             },
-            title = { Text("处理中") },
+            title = { Text(tr("处理中")) },
             text = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = viewModel.folderProgress ?: "正在处理，请稍候…",
+                        text = viewModel.folderProgress ?: tr("正在处理，请稍候…"),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -490,7 +492,7 @@ private fun Pan123ActionSheet(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(file.fname, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, maxLines = 1)
                     Text(
-                        text = if (file.isdir) "文件夹" else "文件",
+                        text = if (file.isdir) tr("文件夹") else tr("文件"),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -554,13 +556,13 @@ private fun Pan123RenameDialog(
     var name by remember { mutableStateOf(file.fname) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("重命名") },
+        title = { Text(tr("重命名")) },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("新文件名") },
+                label = { Text(tr("新文件名")) },
                 singleLine = true,
                 shape = MaterialTheme.shapes.large
             )
@@ -572,10 +574,10 @@ private fun Pan123RenameDialog(
                     if (name.isNotBlank() && name != file.fname) viewModel.renameFile(name.trim())
                 },
                 enabled = name.isNotBlank()
-            ) { Text("确定") }
+            ) { Text(tr("确定")) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(tr("取消")) }
         }
     )
 }
@@ -600,7 +602,7 @@ private fun Pan123MoveSheet(
                 .fillMaxWidth()
                 .padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 32.dp)
         ) {
-            Text("移动到", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
+            Text(tr("移动到"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(8.dp))
             CrumbBar(
                 rootTitle = "根目录",
@@ -636,7 +638,7 @@ private fun Pan123MoveSheet(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    "当前目录没有子文件夹，可直接移动到此处",
+                                    tr("当前目录没有子文件夹，可直接移动到此处"),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center
@@ -667,7 +669,7 @@ private fun Pan123MoveSheet(
             ) {
                 Icon(Icons.Outlined.DriveFileMove, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("移动到此处（$dirName）")
+                Text(tr("移动到此处（{0}）", dirName))
             }
         }
     }
@@ -700,22 +702,22 @@ private fun Pan123ShareSheet(
                 .fillMaxWidth()
                 .padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 32.dp)
         ) {
-            Text("分享文件", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
+            Text(tr("分享文件"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                if (viewModel.multiSelectMode) "已选 ${viewModel.selected.size} 项" else "分享到 123 云盘链接",
+                if (viewModel.multiSelectMode) tr("已选 {0} 项", viewModel.selected.size) else tr("分享到 123 云盘链接"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("提取码", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(tr("提取码"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = !withPassword,
                     onClick = { withPassword = false },
-                    label = { Text("无提取码") },
+                    label = { Text(tr("无提取码")) },
                     colors = FilterChipDefaults.filterChipColors()
                 )
                 FilterChip(
@@ -724,7 +726,7 @@ private fun Pan123ShareSheet(
                         withPassword = true
                         if (passcode.isBlank()) passcode = randomPan123Passcode()
                     },
-                    label = { Text("设置提取码") },
+                    label = { Text(tr("设置提取码")) },
                     colors = FilterChipDefaults.filterChipColors()
                 )
             }
@@ -734,14 +736,14 @@ private fun Pan123ShareSheet(
                     value = passcode,
                     onValueChange = { passcode = it.take(4).filter { c -> c.isLetterOrDigit() } },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("4 位提取码") },
+                    label = { Text(tr("4 位提取码")) },
                     singleLine = true,
                     shape = MaterialTheme.shapes.large
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            Text("有效期", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(tr("有效期"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 periodOptions.forEach { (name, value) ->
@@ -770,7 +772,7 @@ private fun Pan123ShareSheet(
             ) {
                 Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("创建分享")
+                Text(tr("创建分享"))
             }
         }
     }

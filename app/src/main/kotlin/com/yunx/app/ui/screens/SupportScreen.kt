@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
@@ -100,10 +102,10 @@ fun SupportScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("支持开发", style = MaterialTheme.typography.titleLarge) },
+                title = { Text(tr("支持开发"), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("返回"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -154,14 +156,14 @@ fun SupportScreen(
                     Spacer(modifier = Modifier.width(14.dp))
                     Column {
                         Text(
-                            text = "支持开发",
+                            text = tr("支持开发"),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "你的支持，是持续维护与更新的动力",
+                            text = tr("你的支持，是持续维护与更新的动力"),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
                         )
@@ -192,7 +194,7 @@ fun SupportScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "微信扫码捐赠",
+                            text = tr("微信扫码捐赠"),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Medium
                         )
@@ -218,7 +220,7 @@ fun SupportScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "保存二维码到相册后，打开微信「扫一扫」即可捐赠",
+                        text = tr("保存二维码到相册后，打开微信「扫一扫」即可捐赠"),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -248,9 +250,9 @@ fun SupportScreen(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "解析完全免费开源，所有功能无需捐赠即可正常使用。" +
-                            "如果你觉得它帮到了你，愿意的话可以扫码表达一下心意，" +
-                            "你的支持会成为持续维护与更新的动力～",
+                        text = tr("解析完全免费开源，所有功能无需捐赠即可正常使用。") +
+                            tr("如果你觉得它帮到了你，愿意的话可以扫码表达一下心意，") +
+                            tr("你的支持会成为持续维护与更新的动力～"),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                         lineHeight = 21.sp
@@ -260,7 +262,7 @@ fun SupportScreen(
 
             // ---------- 感谢语 ----------
             Text(
-                text = "感谢每一位支持者 ❤",
+                text = tr("感谢每一位支持者 ❤"),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -305,12 +307,12 @@ fun SupportScreen(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(if (saved) "已保存到相册" else "保存到相册")
+                Text(if (saved) tr("已保存到相册") else tr("保存到相册"))
             }
             // 保存成功本地反馈（避免覆盖层遮挡全局 Snackbar 时无提示）
             if (saved) {
                 Text(
-                    text = "✓ 二维码已保存到 相册/Pictures/解析",
+                    text = tr("✓ 二维码已保存到 相册/Pictures/解析"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center

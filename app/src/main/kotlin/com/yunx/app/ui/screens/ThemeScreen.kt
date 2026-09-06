@@ -1,5 +1,9 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
+import com.yunx.app.ui.i18n.tr
+
 import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.os.Build
@@ -171,10 +175,10 @@ fun ThemeScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("主题与外观", style = MaterialTheme.typography.titleLarge) },
+                title = { Text(tr("主题与外观"), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("返回"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -190,8 +194,10 @@ fun ThemeScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 16.dp)
         ) {
+            com.yunx.app.ui.i18n.LanguageSetting()
+            Spacer(Modifier.height(16.dp))
             // ---------- 外观模式 ----------
-            SectionLabel("外观模式")
+            SectionLabel(tr("外观模式"))
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -200,7 +206,7 @@ fun ThemeScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "选择应用的明暗外观",
+                        text = tr("选择应用的明暗外观"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -248,7 +254,7 @@ fun ThemeScreen(
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "主题色",
+                                text = tr("主题色"),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                             AnimatedVisibility(
@@ -258,9 +264,9 @@ fun ThemeScreen(
                             ) {
                                 Text(
                                     text = when {
-                                        effectiveColorMode == 0 -> "动态色彩（跟随壁纸）"
-                                        effectiveColorMode == 2 -> "自定义颜色"
-                                        else -> "暖白杏橙"
+                                        effectiveColorMode == 0 -> tr("动态色彩（跟随壁纸）")
+                                        effectiveColorMode == 2 -> tr("自定义颜色")
+                                        else -> tr("暖白杏橙")
                                     },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -307,9 +313,9 @@ fun ThemeScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text("动态色彩", style = MaterialTheme.typography.bodyMedium)
+                                        Text(tr("动态色彩"), style = MaterialTheme.typography.bodyMedium)
                                         Text(
-                                            "从系统壁纸自动取色",
+                                            tr("从系统壁纸自动取色"),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -328,7 +334,7 @@ fun ThemeScreen(
                             AnimatedVisibility(visible = effectiveColorMode != 0) {
                                 Column {
                                     Text(
-                                        text = "主题颜色",
+                                        text = tr("主题颜色"),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.primary
                                     )
@@ -371,7 +377,7 @@ fun ThemeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // ---------- 桌面图标（可折叠卡片） ----------
-            SectionLabel("桌面图标")
+            SectionLabel(tr("桌面图标"))
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -395,7 +401,7 @@ fun ThemeScreen(
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "桌面图标",
+                                text = tr("桌面图标"),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                             // 与主题色卡片一致的副标题动画：展开时隐藏、收起时显示
@@ -405,7 +411,7 @@ fun ThemeScreen(
                                 exit = fadeOut(tween(200)) + shrinkVertically(tween(200), shrinkTowards = Alignment.Top)
                             ) {
                                 Text(
-                                    text = "统一解析图标",
+                                    text = tr("统一解析图标"),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(top = 2.dp)
@@ -444,7 +450,7 @@ fun ThemeScreen(
                             }
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "应用内标识与桌面图标已统一；部分设备需回到桌面或重启启动器后刷新缓存。",
+                                text = tr("应用内标识与桌面图标已统一；部分设备需回到桌面或重启启动器后刷新缓存。"),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -499,7 +505,7 @@ private fun SmoothFilterChip(
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
-                text = label,
+                text = tr(label),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
             )
@@ -544,7 +550,7 @@ private fun ColorSelectionItem(
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = name,
+            text = tr(name),
             style = MaterialTheme.typography.labelSmall,
             color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -588,7 +594,7 @@ private fun CustomColorButton(
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "自定义",
+            text = tr("自定义"),
             style = MaterialTheme.typography.labelSmall,
             color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -723,10 +729,10 @@ private fun ColorPickerDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onDismiss) { Text("取消") }
+                    TextButton(onClick = onDismiss) { Text(tr("取消")) }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = { onColorSelected(currentColor.toArgb().toLong() and 0xFFFFFFFFL) }) {
-                        Text("应用")
+                        Text(tr("应用"))
                     }
                 }
             }
@@ -875,7 +881,7 @@ private fun AppIconOption(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Check,
-                        contentDescription = "已选择",
+                        contentDescription = tr("已选择"),
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(14.dp)
                     )
@@ -895,7 +901,7 @@ private fun AppIconOption(
 @Composable
 private fun SectionLabel(text: String) {
     Text(
-        text = text,
+        text = tr(text),
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)

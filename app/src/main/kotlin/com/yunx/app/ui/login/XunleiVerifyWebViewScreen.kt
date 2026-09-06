@@ -1,5 +1,7 @@
 package com.yunx.app.ui.login
 
+import com.yunx.app.ui.i18n.tr
+
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Handler
@@ -160,10 +162,10 @@ fun XunleiVerifyWebViewScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("迅雷安全验证", style = MaterialTheme.typography.titleLarge) },
+                title = { Text(tr("迅雷安全验证"), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("返回"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)

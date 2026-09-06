@@ -1,5 +1,9 @@
 package com.fuke.mobile
 
+import com.yunx.app.ui.i18n.tr
+
+import com.yunx.app.ui.i18n.tr
+
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -221,14 +225,14 @@ private fun DownloadScreen(sharedText: String, sharedToken: Long, embedded: Bool
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 FukeMark(58.dp)
                 Spacer(Modifier.height(14.dp))
-                Text("把喜欢的视频，清晰地留在手机。", fontSize = 27.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                Text(tr("把喜欢的视频，清晰地留在手机。"), fontSize = 27.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(8.dp))
-                Text("无需登录 · 自动获取匿名公开的最高视频与音频", fontSize = 12.sp, color = Muted, textAlign = TextAlign.Center)
+                Text(tr("无需登录 · 自动获取匿名公开的最高视频与音频"), fontSize = 12.sp, color = Muted, textAlign = TextAlign.Center)
             }
         }
         if (!embedded || (!analyzing && preview == null)) item {
             OutlineCard {
-                Text("视频链接或分享文字", fontSize = 12.sp, color = Muted)
+                Text(tr("视频链接或分享文字"), fontSize = 12.sp, color = Muted)
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = input,
@@ -236,7 +240,7 @@ private fun DownloadScreen(sharedText: String, sharedToken: Long, embedded: Bool
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                     maxLines = 6,
-                    placeholder = { Text("粘贴一个或多个链接；抖音可直接粘贴整段分享文字", fontSize = 12.sp) },
+                    placeholder = { Text(tr("粘贴一个或多个链接；抖音可直接粘贴整段分享文字"), fontSize = 12.sp) },
                     shape = RoundedCornerShape(12.dp)
                 )
                 Spacer(Modifier.height(10.dp))
@@ -245,7 +249,7 @@ private fun DownloadScreen(sharedText: String, sharedToken: Long, embedded: Bool
                         onClick = { input = clipboard.getText()?.text.orEmpty() },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(11.dp)
-                    ) { Text("粘贴") }
+                    ) { Text(tr("粘贴")) }
                     PrimaryButton(
                         text = if (analyzing) "正在解析" else "解析链接",
                         enabled = !analyzing,
@@ -276,7 +280,7 @@ private fun DownloadScreen(sharedText: String, sharedToken: Long, embedded: Bool
             Column(Modifier.fillMaxWidth().padding(vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 androidx.compose.material3.CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 2.dp)
                 Spacer(Modifier.height(16.dp))
-                Text("正在读取视频与可用画质…", style = MaterialTheme.typography.bodyLarge)
+                Text(tr("正在读取视频与可用画质…"), style = MaterialTheme.typography.bodyLarge)
             }
         }
         preview?.let { info ->
@@ -292,9 +296,9 @@ private fun DownloadScreen(sharedText: String, sharedToken: Long, embedded: Bool
                         Column(Modifier.weight(1f)) {
                             Text(info.platform, color = Orange, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                             Text(info.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            Text(listOf(info.uploader, formatDuration(info.durationSeconds), "${info.formats.size} 种画质").filter { it.isNotBlank() }.joinToString(" · "), fontSize = 12.sp, color = Muted, maxLines = 1)
+                            Text(listOf(info.uploader, formatDuration(info.durationSeconds), tr("{0} 种画质", info.formats.size)).filter { it.isNotBlank() }.joinToString(" · "), fontSize = 12.sp, color = Muted, maxLines = 1)
                             if (info.platform in setOf("抖音", "TikTok", "小红书", "微博", "X")) {
-                                Text("优先使用平台公开提供的原始视频", color = Muted, fontSize = 12.sp)
+                                Text(tr("优先使用平台公开提供的原始视频"), color = Muted, fontSize = 12.sp)
                             }
                         }
                     }
@@ -302,31 +306,31 @@ private fun DownloadScreen(sharedText: String, sharedToken: Long, embedded: Bool
             }
             item {
                 OutlineCard {
-                    Text("下载配置", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text(tr("下载配置"), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(10.dp))
                     Box {
                         OutlinedButton(onClick = { formatMenu = true }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp)) {
-                            Text(selectedFormat?.label ?: "自动选择最高画质", modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(selectedFormat?.label ?: tr("自动选择最高画质"), modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text("⌄")
                         }
                         DropdownMenu(expanded = formatMenu, onDismissRequest = { formatMenu = false }) {
                             info.formats.forEach { choice ->
-                                DropdownMenuItem(text = { Text(choice.label, fontSize = 12.sp) }, onClick = { selectedFormat = choice; formatMenu = false })
+                                DropdownMenuItem(text = { Text(tr(choice.label), fontSize = 12.sp) }, onClick = { selectedFormat = choice; formatMenu = false })
                             }
                         }
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = embedSubtitles, onCheckedChange = { embedSubtitles = it })
                         Column {
-                            Text("尝试嵌入中英文字幕", fontSize = 12.sp)
-                            Text("只有网站公开提供字幕时才会生效", fontSize = 12.sp, color = Muted)
+                            Text(tr("尝试嵌入中英文字幕"), fontSize = 12.sp)
+                            Text(tr("只有网站公开提供字幕时才会生效"), fontSize = 12.sp, color = Muted)
                         }
                     }
                 }
             }
         }
         item {
-            PrimaryButton(text = "开始下载", modifier = Modifier.fillMaxWidth(), enabled = !analyzing && preview != null && extractUrls(input).isNotEmpty()) {
+            PrimaryButton(text = tr("开始下载"), modifier = Modifier.fillMaxWidth(), enabled = !analyzing && preview != null && extractUrls(input).isNotEmpty()) {
                 val urls = extractUrls(input)
                 val chosen = selectedFormat ?: defaultChoice(settings.defaultQuality)
                 val count = TaskStore.addAll(urls.map { url ->
@@ -371,13 +375,13 @@ private fun TasksScreen(tasks: List<DownloadTask>) {
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("视频与音频", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                Text("共 ${tasks.size} 个任务", fontSize = 15.sp, color = Muted)
+                Text(tr("视频与音频"), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text(tr("共 {0} 个任务", tasks.size), fontSize = 15.sp, color = Muted)
             }
-            TextButton(onClick = { DownloadService.clearFinished(context) }) { Text("清理完成") }
+            TextButton(onClick = { DownloadService.clearFinished(context) }) { Text(tr("清理完成")) }
         }
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, placeholder = { Text("搜索标题、平台或链接") }, shape = RoundedCornerShape(11.dp))
+        OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, placeholder = { Text(tr("搜索标题、平台或链接")) }, shape = RoundedCornerShape(11.dp))
         Spacer(Modifier.height(8.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp), contentPadding = PaddingValues(bottom = 9.dp)) {
             items(listOf("全部", "进行中", "已暂停", "已完成", "失败")) { label ->
@@ -387,8 +391,8 @@ private fun TasksScreen(tasks: List<DownloadTask>) {
         if (filtered.isEmpty()) {
             Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 Text("↓", fontSize = 34.sp, color = Orange)
-                Text(if (tasks.isEmpty()) "还没有下载任务" else "没有符合条件的记录", fontWeight = FontWeight.SemiBold)
-                Text("在解析页粘贴链接即可开始", color = Muted, fontSize = 15.sp)
+                Text(if (tasks.isEmpty()) tr("还没有下载任务") else tr("没有符合条件的记录"), fontWeight = FontWeight.SemiBold)
+                Text(tr("在解析页粘贴链接即可开始"), color = Muted, fontSize = 15.sp)
             }
         } else {
             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(9.dp), contentPadding = PaddingValues(bottom = 28.dp)) {
@@ -410,7 +414,7 @@ private fun TaskCard(task: DownloadTask, context: android.content.Context) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(task.title, Modifier.weight(1f), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Spacer(Modifier.width(8.dp))
-                    Text(statusLabel(task.status), fontSize = 12.sp, color = statusColor(task.status), modifier = Modifier.border(1.dp, statusColor(task.status).copy(alpha = .3f), CircleShape).padding(horizontal = 7.dp, vertical = 3.dp))
+                    Text(tr(statusLabel(task.status)), fontSize = 12.sp, color = statusColor(task.status), modifier = Modifier.border(1.dp, statusColor(task.status).copy(alpha = .3f), CircleShape).padding(horizontal = 7.dp, vertical = 3.dp))
                 }
                 Text(
                     listOf(task.platform, task.qualityLabel, task.stage).filter { it.isNotBlank() }.joinToString(" · "),
@@ -422,7 +426,7 @@ private fun TaskCard(task: DownloadTask, context: android.content.Context) {
                 Spacer(Modifier.height(8.dp))
                 if (task.status == TaskStatus.RUNNING) {
                     Text(listOf("${task.progress.coerceIn(0, 100)}%", task.speed,
-                        task.eta.takeIf { it.isNotBlank() }?.let { "剩余 $it" }.orEmpty())
+                        task.eta.takeIf { it.isNotBlank() }?.let { tr("剩余 {0}", it) }.orEmpty())
                         .filter { it.isNotBlank() }.joinToString(" · "),
                         style = MaterialTheme.typography.bodyMedium, color = Orange)
                     Spacer(Modifier.height(6.dp))
@@ -444,19 +448,19 @@ private fun TaskCard(task: DownloadTask, context: android.content.Context) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     when (task.status) {
                         TaskStatus.RUNNING -> {
-                            TextButton(onClick = { DownloadService.action(context, DownloadService.ACTION_PAUSE, task.id) }) { Text("暂停") }
-                            TextButton(onClick = { DownloadService.action(context, DownloadService.ACTION_CANCEL, task.id) }) { Text("取消", color = Danger) }
+                            TextButton(onClick = { DownloadService.action(context, DownloadService.ACTION_PAUSE, task.id) }) { Text(tr("暂停")) }
+                            TextButton(onClick = { DownloadService.action(context, DownloadService.ACTION_CANCEL, task.id) }) { Text(tr("取消"), color = Danger) }
                         }
                         TaskStatus.PAUSED, TaskStatus.FAILED, TaskStatus.CANCELED -> {
-                            TextButton(onClick = { DownloadService.action(context, DownloadService.ACTION_CONTINUE, task.id) }) { Text(if (task.status == TaskStatus.PAUSED) "继续" else "重试") }
-                            TextButton(onClick = { DownloadService.action(context, DownloadService.ACTION_REMOVE, task.id) }) { Text("移除", color = Danger) }
+                            TextButton(onClick = { DownloadService.action(context, DownloadService.ACTION_CONTINUE, task.id) }) { Text(if (task.status == TaskStatus.PAUSED) tr("继续") else tr("重试")) }
+                            TextButton(onClick = { DownloadService.action(context, DownloadService.ACTION_REMOVE, task.id) }) { Text(tr("移除"), color = Danger) }
                         }
                         TaskStatus.COMPLETED -> {
-                            TextButton(onClick = { openMedia(context, task.fileUri) }) { Text("打开文件") }
-                            TextButton(onClick = { shareMedia(context, task.fileUri) }) { Text("分享") }
-                            TextButton(onClick = { DownloadService.action(context, DownloadService.ACTION_REMOVE, task.id) }) { Text("移除", color = Danger) }
+                            TextButton(onClick = { openMedia(context, task.fileUri) }) { Text(tr("打开文件")) }
+                            TextButton(onClick = { shareMedia(context, task.fileUri) }) { Text(tr("分享")) }
+                            TextButton(onClick = { DownloadService.action(context, DownloadService.ACTION_REMOVE, task.id) }) { Text(tr("移除"), color = Danger) }
                         }
-                        TaskStatus.QUEUED -> TextButton(onClick = { DownloadService.action(context, DownloadService.ACTION_REMOVE, task.id) }) { Text("移除", color = Danger) }
+                        TaskStatus.QUEUED -> TextButton(onClick = { DownloadService.action(context, DownloadService.ACTION_REMOVE, task.id) }) { Text(tr("移除"), color = Danger) }
                     }
                 }
             }
@@ -503,12 +507,12 @@ private fun ToolsScreen() {
         }
     }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("本地处理", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text("下载之外常用的本地媒体处理", fontSize = 12.sp, color = Muted)
+        Text(tr("本地处理"), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(tr("下载之外常用的本地媒体处理"), fontSize = 12.sp, color = Muted)
         Spacer(Modifier.height(14.dp))
         OutlineCard {
-            Text("截图时间点", fontSize = 12.sp, color = Muted)
-            OutlinedTextField(value = screenshotSeconds, onValueChange = { screenshotSeconds = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, suffix = { Text("秒") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+            Text(tr("截图时间点"), fontSize = 12.sp, color = Muted)
+            OutlinedTextField(value = screenshotSeconds, onValueChange = { screenshotSeconds = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, suffix = { Text(tr("秒")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
         }
         Spacer(Modifier.height(12.dp))
         val tools = listOf(
@@ -559,45 +563,45 @@ private fun SettingsScreen(coreState: String) {
     var nameMenu by remember { mutableStateOf(false) }
     var updating by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp, 16.dp, 16.dp, 34.dp)) {
-        Text("软件设置", fontSize = 26.sp, fontWeight = FontWeight.Bold)
-        Text("管理默认画质、网络与下载核心", fontSize = 12.sp, color = Muted)
+        Text(tr("软件设置"), fontSize = 26.sp, fontWeight = FontWeight.Bold)
+        Text(tr("管理默认画质、网络与下载核心"), fontSize = 12.sp, color = Muted)
         Spacer(Modifier.height(14.dp))
-        SectionLabel("下载")
+        SectionLabel(tr("下载"))
         SettingsCard {
-            SettingRow("清", "默认清晰度", qualityLabel(settings.defaultQuality)) { qualityMenu = true }
+            SettingRow(tr("清"), tr("默认清晰度"), qualityLabel(settings.defaultQuality)) { qualityMenu = true }
             DropdownMenu(expanded = qualityMenu, onDismissRequest = { qualityMenu = false }) {
                 listOf("best" to "匿名最高画质", "1080" to "最高 1080p", "720" to "最高 720p", "audio" to "仅音频 MP3").forEach { item ->
                     DropdownMenuItem(text = { Text(item.second) }, onClick = { settings = settings.copy(defaultQuality = item.first); AppPrefs.write(context, settings); qualityMenu = false })
                 }
             }
             HorizontalDivider(color = Line)
-            SettingRow("试", "失败重试次数", "${settings.retries} 次") { retryMenu = true }
+            SettingRow(tr("试"), tr("失败重试次数"), tr("{0} 次", settings.retries)) { retryMenu = true }
             DropdownMenu(expanded = retryMenu, onDismissRequest = { retryMenu = false }) {
-                listOf(1, 3, 5, 10).forEach { count -> DropdownMenuItem(text = { Text("$count 次") }, onClick = { settings = settings.copy(retries = count); AppPrefs.write(context, settings); retryMenu = false }) }
+                listOf(1, 3, 5, 10).forEach { count -> DropdownMenuItem(text = { Text(tr("{0} 次", count)) }, onClick = { settings = settings.copy(retries = count); AppPrefs.write(context, settings); retryMenu = false }) }
             }
             HorizontalDivider(color = Line)
             Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 SettingGlyph("网")
                 Spacer(Modifier.width(11.dp))
-                Column(Modifier.weight(1f)) { Text("仅 Wi-Fi 下载", fontSize = 15.sp, fontWeight = FontWeight.Medium); Text("避免意外消耗移动数据", fontSize = 12.sp, color = Muted) }
+                Column(Modifier.weight(1f)) { Text(tr("仅 Wi-Fi 下载"), fontSize = 15.sp, fontWeight = FontWeight.Medium); Text(tr("避免意外消耗移动数据"), fontSize = 12.sp, color = Muted) }
                 Switch(checked = settings.wifiOnly, onCheckedChange = { settings = settings.copy(wifiOnly = it); AppPrefs.write(context, settings) })
             }
             HorizontalDivider(color = Line)
-            SettingRow("名", "文件命名", fileNameLabel(settings.fileNameRule)) { nameMenu = true }
+            SettingRow(tr("名"), tr("文件命名"), fileNameLabel(settings.fileNameRule)) { nameMenu = true }
             DropdownMenu(expanded = nameMenu, onDismissRequest = { nameMenu = false }) {
                 listOf("title-id" to "标题 + 视频 ID", "title" to "仅标题", "uploader-title" to "作者 + 标题").forEach { item -> DropdownMenuItem(text = { Text(item.second) }, onClick = { settings = settings.copy(fileNameRule = item.first); AppPrefs.write(context, settings); nameMenu = false }) }
             }
         }
         Spacer(Modifier.height(16.dp))
-        SectionLabel("保存")
+        SectionLabel(tr("保存"))
         SettingsCard {
-            SettingRow("夹", "成品文件夹", "手机存储/下载/解析") { openDownloads(context) }
+            SettingRow(tr("夹"), tr("成品文件夹"), tr("手机存储/下载/解析")) { openDownloads(context) }
         }
         Spacer(Modifier.height(16.dp))
-        SectionLabel("支持")
+        SectionLabel(tr("支持"))
         SettingsCard {
             Column(Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) { SettingGlyph("核"); Spacer(Modifier.width(11.dp)); Column(Modifier.weight(1f)) { Text("下载核心", fontSize = 15.sp, fontWeight = FontWeight.Medium); Text(coreState, fontSize = 12.sp, color = Muted) } }
+                Row(verticalAlignment = Alignment.CenterVertically) { SettingGlyph("核"); Spacer(Modifier.width(11.dp)); Column(Modifier.weight(1f)) { Text(tr("下载核心"), fontSize = 15.sp, fontWeight = FontWeight.Medium); Text(coreState, fontSize = 12.sp, color = Muted) } }
                 Spacer(Modifier.height(9.dp))
                 OutlinedButton(onClick = {
                     updating = true
@@ -607,18 +611,18 @@ private fun SettingsScreen(coreState: String) {
                             .onFailure { Toast.makeText(context, cleanUiError(it), Toast.LENGTH_LONG).show() }
                         updating = false
                     }
-                }, enabled = !updating, modifier = Modifier.fillMaxWidth()) { Text(if (updating) "正在更新…" else "检查并更新下载核心") }
+                }, enabled = !updating, modifier = Modifier.fillMaxWidth()) { Text(if (updating) tr("正在更新…") else tr("检查并更新下载核心")) }
             }
             HorizontalDivider(color = Line)
-            SettingRow("邮", "问题反馈", "3316109338@qq.com") { openFeedback(context) }
+            SettingRow(tr("邮"), tr("问题反馈"), "3316109338@qq.com") { openFeedback(context) }
             HorizontalDivider(color = Line)
-            SettingRow("权", "系统权限", "通知权限与应用设置") { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) }
+            SettingRow(tr("权"), tr("系统权限"), tr("通知权限与应用设置")) { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) }
         }
         Spacer(Modifier.height(16.dp))
-        SectionLabel("关于")
+        SectionLabel(tr("关于"))
         SettingsCard {
             Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                FukeMark(40.dp); Spacer(Modifier.width(12.dp)); Column(Modifier.weight(1f)) { Text("解析 Android", fontWeight = FontWeight.SemiBold); Text("网盘、公开视频下载与本地媒体工具", fontSize = 12.sp, color = Muted) }; Text(BuildConfig.VERSION_NAME, color = Orange, fontSize = 12.sp)
+                FukeMark(40.dp); Spacer(Modifier.width(12.dp)); Column(Modifier.weight(1f)) { Text(tr("解析 Android"), fontWeight = FontWeight.SemiBold); Text(tr("网盘、公开视频下载与本地媒体工具"), fontSize = 12.sp, color = Muted) }; Text(BuildConfig.VERSION_NAME, color = Orange, fontSize = 12.sp)
             }
         }
     }
@@ -661,7 +665,7 @@ private fun FilterChip(label: String, active: Boolean, onClick: () -> Unit) { Te
 private fun SummaryBox(label: String, count: Int, modifier: Modifier) { Column(modifier.border(1.dp, Line, RoundedCornerShape(11.dp)).background(Paper, RoundedCornerShape(11.dp)).padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) { Text(count.toString(), color = Orange, fontSize = 20.sp, fontWeight = FontWeight.Bold); Text(label, color = Muted, fontSize = 12.sp) } }
 
 @Composable
-private fun ToolCard(glyph: String, title: String, body: String, busy: Boolean, onClick: () -> Unit) { val interaction = remember { MutableInteractionSource() }; val pressed by interaction.collectIsPressedAsState(); val scale by animateFloatAsState(if (pressed) .975f else 1f, tween(if (com.yunx.app.data.prefs.SettingsRepository(LocalContext.current).reduceMotion || (Build.VERSION.SDK_INT >= 26 && !android.animation.ValueAnimator.areAnimatorsEnabled())) 0 else 120, easing = CubicBezierEasing(.23f, 1f, .32f, 1f)), label = "cardPress"); Column(Modifier.fillMaxWidth().height(200.dp).scale(scale).border(1.dp, Line, RoundedCornerShape(16.dp)).background(Paper, RoundedCornerShape(16.dp)).clickable(interactionSource = interaction, indication = null, enabled = !busy, onClick = onClick).padding(15.dp)) { Text(glyph, color = Orange, fontSize = 24.sp); Spacer(Modifier.height(18.dp)); Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold); Text(body, color = Muted, fontSize = 12.sp, lineHeight = 18.sp); Spacer(Modifier.weight(1f)); Text(if (busy) "处理中…" else "开始使用 →", color = Orange, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) } }
+private fun ToolCard(glyph: String, title: String, body: String, busy: Boolean, onClick: () -> Unit) { val interaction = remember { MutableInteractionSource() }; val pressed by interaction.collectIsPressedAsState(); val scale by animateFloatAsState(if (pressed) .975f else 1f, tween(if (com.yunx.app.data.prefs.SettingsRepository(LocalContext.current).reduceMotion || (Build.VERSION.SDK_INT >= 26 && !android.animation.ValueAnimator.areAnimatorsEnabled())) 0 else 120, easing = CubicBezierEasing(.23f, 1f, .32f, 1f)), label = "cardPress"); Column(Modifier.fillMaxWidth().height(200.dp).scale(scale).border(1.dp, Line, RoundedCornerShape(16.dp)).background(Paper, RoundedCornerShape(16.dp)).clickable(interactionSource = interaction, indication = null, enabled = !busy, onClick = onClick).padding(15.dp)) { Text(glyph, color = Orange, fontSize = 24.sp); Spacer(Modifier.height(18.dp)); Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold); Text(body, color = Muted, fontSize = 12.sp, lineHeight = 18.sp); Spacer(Modifier.weight(1f)); Text(if (busy) tr("处理中…") else tr("开始使用 →"), color = Orange, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) } }
 
 @Composable
 private fun SectionLabel(text: String) { Text(text, fontSize = 12.sp, color = Orange, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 3.dp, bottom = 7.dp)) }
@@ -779,8 +783,8 @@ private fun statusGlyph(status: TaskStatus) = when (status) { TaskStatus.COMPLET
 private fun statusColor(status: TaskStatus) = when (status) { TaskStatus.COMPLETED -> Success; TaskStatus.FAILED -> Danger; TaskStatus.PAUSED -> MaterialTheme.colorScheme.tertiary; else -> Orange }
 private fun formatDuration(seconds: Int) = if (seconds <= 0) "" else "%d:%02d".format(seconds / 60, seconds % 60)
 private fun formatBytes(bytes: Long): String = if (bytes >= 1024L * 1024L * 1024L) "%.1f GB".format(bytes / 1073741824.0) else "%.0f MB".format(bytes / 1048576.0)
-private fun qualityLabel(value: String) = when (value) { "1080" -> "最高 1080p"; "720" -> "最高 720p"; "audio" -> "仅音频 MP3"; else -> "匿名最高画质" }
-private fun fileNameLabel(value: String) = when (value) { "title" -> "仅标题"; "uploader-title" -> "作者 + 标题"; else -> "标题 + 视频 ID" }
+private fun qualityLabel(value: String) = tr(when (value) { "1080" -> "最高 1080p"; "720" -> "最高 720p"; "audio" -> "仅音频 MP3"; else -> "匿名最高画质" })
+private fun fileNameLabel(value: String) = tr(when (value) { "title" -> "仅标题"; "uploader-title" -> "作者 + 标题"; else -> "标题 + 视频 ID" })
 
 private fun cleanUiError(error: Throwable): String {
     return MediaErrorMessages.forAction(error)

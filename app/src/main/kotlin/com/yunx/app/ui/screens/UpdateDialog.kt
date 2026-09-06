@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -68,7 +70,7 @@ fun UpdateDialog(
         title = {
             Column {
                 Text(
-                    text = "发现新版本",
+                    text = tr("发现新版本"),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -82,7 +84,7 @@ fun UpdateDialog(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "当前 $currentVersion",
+                        text = tr("当前 {0}", currentVersion),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -92,7 +94,7 @@ fun UpdateDialog(
         text = {
             Column {
                 Text(
-                    text = "更新内容",
+                    text = tr("更新内容"),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -103,7 +105,7 @@ fun UpdateDialog(
                     color = MaterialTheme.colorScheme.surfaceContainerLow
                 ) {
                     Text(
-                        text = release.body.ifBlank { "暂无更新说明" },
+                        text = release.body.ifBlank { tr("暂无更新说明") },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(160.dp)
@@ -115,7 +117,7 @@ fun UpdateDialog(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "更新清单已验证作者签名；下载完成后还会校验安装包 SHA-256。",
+                    text = tr("更新清单已验证作者签名；下载完成后还会校验安装包 SHA-256。"),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -133,7 +135,7 @@ fun UpdateDialog(
                             strokeWidth = 2.dp
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("下载中…")
+                        Text(tr("下载中…"))
                     } else {
                         Icon(
                             imageVector = Icons.Outlined.Download,
@@ -141,12 +143,12 @@ fun UpdateDialog(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("下载更新")
+                        Text(tr("下载更新"))
                     }
                 }
                 if (onDownloadMirror != null) {
                     TextButton(onClick = onDownloadMirror) {
-                        Text("使用镜像站下载", color = MaterialTheme.colorScheme.primary)
+                        Text(tr("使用镜像站下载"), color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -154,10 +156,10 @@ fun UpdateDialog(
         dismissButton = {
             Row {
                 TextButton(onClick = onIgnore) {
-                    Text("忽略本次", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(tr("忽略本次"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 TextButton(onClick = onLater) {
-                    Text("稍后")
+                    Text(tr("稍后"))
                 }
             }
         }

@@ -1,5 +1,7 @@
 package com.yunx.app.ui.screens
 
+import com.yunx.app.ui.i18n.tr
+
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -136,8 +138,8 @@ fun DownloadScreen(
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             TabRow(selectedTabIndex = if (showMedia) 1 else 0, containerColor = MaterialTheme.colorScheme.surface) {
-                Tab(selected = !showMedia, onClick = { showMedia = false }, text = { Text("网盘与文件 · ${tasks.size}") })
-                Tab(selected = showMedia, onClick = { showMedia = true }, text = { Text("视频与音频 · ${mediaTasks.size}") })
+                Tab(selected = !showMedia, onClick = { showMedia = false }, text = { Text(tr("网盘与文件 · {0}", tasks.size)) })
+                Tab(selected = showMedia, onClick = { showMedia = true }, text = { Text(tr("视频与音频 · {0}", mediaTasks.size)) })
             }
             if (showMedia) {
                 Box(Modifier.weight(1f)) { EmbeddedMediaTasks() }
@@ -211,7 +213,7 @@ fun DownloadScreen(
             },
             modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp)
         ) {
-            Icon(Icons.Filled.Add, contentDescription = "手动添加下载任务")
+            Icon(Icons.Filled.Add, contentDescription = tr("手动添加下载任务"))
         }
     }
 
@@ -245,11 +247,11 @@ fun DownloadScreen(
         }
         AlertDialog(
             onDismissRequest = { showDeleteAllConfirm = false },
-            title = { Text("删除全部任务") },
+            title = { Text(tr("删除全部任务")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "确定删除所有下载任务吗？删除后任务记录将被清除，且不可恢复。",
+                        text = tr("确定删除所有下载任务吗？删除后任务记录将被清除，且不可恢复。"),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     if (hasCompletedFile) {
@@ -263,12 +265,12 @@ fun DownloadScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "同时删除本地文件",
+                                text = tr("同时删除本地文件"),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
                         Text(
-                            text = "勾选后将一并删除所有已下载到 Download 目录的文件，且不可恢复。",
+                            text = tr("勾选后将一并删除所有已下载到 Download 目录的文件，且不可恢复。"),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -284,10 +286,10 @@ fun DownloadScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
                     )
-                ) { Text("全部删除") }
+                ) { Text(tr("全部删除")) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteAllConfirm = false }) { Text("取消") }
+                TextButton(onClick = { showDeleteAllConfirm = false }) { Text(tr("取消")) }
             }
         )
     }
@@ -312,18 +314,18 @@ private fun MediaQueueEntry(total: Int, active: Int, onClick: () -> Unit) {
             )
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("公开视频任务", fontWeight = FontWeight.SemiBold)
+                Text(tr("公开视频任务"), fontWeight = FontWeight.SemiBold)
                 Text(
                     when {
-                        active > 0 -> "$total 个媒体任务 · $active 个进行中（独立队列）"
-                        total > 0 -> "$total 个媒体任务（独立队列）"
-                        else -> "视频解析、下载与图片去水印（独立队列）"
+                        active > 0 -> tr("{0} 个媒体任务 · {1} 个进行中（独立队列）", total, active)
+                        total > 0 -> tr("{0} 个媒体任务（独立队列）", total)
+                        else -> tr("视频解析、下载与图片去水印（独立队列）")
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = .78f)
                 )
             }
-            Icon(Icons.Outlined.OpenInNew, contentDescription = "打开公开视频任务")
+            Icon(Icons.Outlined.OpenInNew, contentDescription = tr("打开公开视频任务"))
         }
     }
 }
@@ -350,7 +352,7 @@ private fun DownloadBatchBar(
                 modifier = Modifier.size(16.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
-            Text("全部暂停")
+            Text(tr("全部暂停"))
         }
         TextButton(onClick = onResumeAll, enabled = hasResumable) {
             Icon(
@@ -359,7 +361,7 @@ private fun DownloadBatchBar(
                 modifier = Modifier.size(16.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
-            Text("全部开始")
+            Text(tr("全部开始"))
         }
         Spacer(modifier = Modifier.weight(1f))
         TextButton(onClick = onDeleteAll) {
@@ -370,7 +372,7 @@ private fun DownloadBatchBar(
                 tint = MaterialTheme.colorScheme.error
             )
             Spacer(modifier = Modifier.width(4.dp))
-            Text("删除全部", color = MaterialTheme.colorScheme.error)
+            Text(tr("删除全部"), color = MaterialTheme.colorScheme.error)
         }
     }
 }
@@ -386,11 +388,11 @@ private fun DeleteConfirmDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("删除下载任务") },
+        title = { Text(tr("删除下载任务")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    text = "确定删除「${task.fileName}」吗？",
+                    text = tr("确定删除「{0}」吗？", task.fileName),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 if (hasLocalFile) {
@@ -404,18 +406,18 @@ private fun DeleteConfirmDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "同时删除本地文件",
+                            text = tr("同时删除本地文件"),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
                 Text(
                     text = if (hasLocalFile) {
-                        "勾选后将一并删除已下载到 Download 目录的文件，且不可恢复。"
+                        tr("勾选后将一并删除已下载到 Download 目录的文件，且不可恢复。")
                     } else if (task.status == DownloadTaskEntity.STATUS_COMPLETED) {
-                        "该任务没有已完成的本地文件。"
+                        tr("该任务没有已完成的本地文件。")
                     } else {
-                        "该任务尚未完成，删除后将同时清除已下载的临时文件，且不可恢复。"
+                        tr("该任务尚未完成，删除后将同时清除已下载的临时文件，且不可恢复。")
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -428,10 +430,10 @@ private fun DeleteConfirmDialog(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error
                 )
-            ) { Text("删除") }
+            ) { Text(tr("删除")) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(tr("取消")) }
         }
     )
 }
@@ -458,13 +460,13 @@ private fun EmptyDownloadState(modifier: Modifier = Modifier) {
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "暂无下载任务",
+            text = tr("暂无下载任务"),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium
         )
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = "解析分享后点击文件即可加入下载队列\n也可点击右下角按钮手动添加",
+            text = tr("解析分享后点击文件即可加入下载队列\n也可点击右下角按钮手动添加"),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -538,7 +540,7 @@ private fun FolderDownloadGroup(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "${completed}/${tasks.size} 个文件 · ${formatSize(downloaded)} / ${formatSize(totalSize)}",
+                        text = tr("{0}/{1} 个文件 · {2} / {3}", completed, tasks.size, formatSize(downloaded), formatSize(totalSize)),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -553,7 +555,7 @@ private fun FolderDownloadGroup(
                     }
                 ) {
                     Text(
-                        text = if (done) "已完成" else "${(fraction * 100).toInt()}%",
+                        text = if (done) tr("已完成") else "${(fraction * 100).toInt()}%",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = if (done) {
@@ -567,7 +569,7 @@ private fun FolderDownloadGroup(
                 Spacer(modifier = Modifier.width(2.dp))
                 Icon(
                     imageVector = if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                    contentDescription = if (expanded) "收起" else "展开",
+                    contentDescription = if (expanded) tr("收起") else tr("展开"),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -678,9 +680,9 @@ private fun DownloadSubTaskRow(
                     Text(
                         text = when {
                             isDownloading && stats != null && stats.speed > 0 ->
-                                "${DownloadTaskEntity.statusText(task.status)} · ${formatSpeed(stats.speed)}"
+                                "${tr(DownloadTaskEntity.statusText(task.status))} · ${formatSpeed(stats.speed)}"
                             task.status == DownloadTaskEntity.STATUS_COMPLETED && task.avgSpeed > 0 ->
-                                "${DownloadTaskEntity.statusText(task.status)} · 平均 ${formatSpeed(task.avgSpeed)}"
+                                tr("{0} · 平均 {1}", tr(DownloadTaskEntity.statusText(task.status)), formatSpeed(task.avgSpeed))
                             else -> taskStatusLine(task)
                         },
                         style = MaterialTheme.typography.labelSmall,
@@ -698,20 +700,20 @@ private fun DownloadSubTaskRow(
                     DownloadTaskEntity.STATUS_PREPARING,
                     DownloadTaskEntity.STATUS_RETRY_WAIT -> IconButton(onClick = onPause, modifier = Modifier.size(32.dp)) {
                         Icon(
-                            Icons.Outlined.Pause, contentDescription = "暂停",
+                            Icons.Outlined.Pause, contentDescription = tr("暂停"),
                             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)
                         )
                     }
                     DownloadTaskEntity.STATUS_PAUSED,
                     DownloadTaskEntity.STATUS_INTERRUPTED -> IconButton(onClick = onResume, modifier = Modifier.size(32.dp)) {
                         Icon(
-                            Icons.Outlined.PlayArrow, contentDescription = "继续",
+                            Icons.Outlined.PlayArrow, contentDescription = tr("继续"),
                             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)
                         )
                     }
                     DownloadTaskEntity.STATUS_FAILED -> IconButton(onClick = onResume, modifier = Modifier.size(32.dp)) {
                         Icon(
-                            Icons.Outlined.Refresh, contentDescription = "重试",
+                            Icons.Outlined.Refresh, contentDescription = tr("重试"),
                             tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp)
                         )
                     }
@@ -720,7 +722,7 @@ private fun DownloadSubTaskRow(
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
-                            Icons.Outlined.OpenInNew, contentDescription = "打开",
+                            Icons.Outlined.OpenInNew, contentDescription = tr("打开"),
                             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)
                         )
                     }
@@ -728,7 +730,7 @@ private fun DownloadSubTaskRow(
                 // 删除
                 IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
                     Icon(
-                        Icons.Outlined.Delete, contentDescription = "删除",
+                        Icons.Outlined.Delete, contentDescription = tr("删除"),
                         tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp)
                     )
                 }
@@ -777,7 +779,7 @@ private fun DownloadSubTaskRow(
                         }) {
                             Icon(Icons.Outlined.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("复制直链")
+                            Text(tr("复制直链"))
                         }
                         TextButton(onClick = {
                             showMenu = false
@@ -785,7 +787,7 @@ private fun DownloadSubTaskRow(
                         }) {
                             Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("重新下载")
+                            Text(tr("重新下载"))
                         }
                         TextButton(onClick = {
                             showMenu = false
@@ -793,12 +795,12 @@ private fun DownloadSubTaskRow(
                         }) {
                             Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("删除任务")
+                            Text(tr("删除任务"))
                         }
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { showMenu = false }) { Text("取消") }
+                    TextButton(onClick = { showMenu = false }) { Text(tr("取消")) }
                 }
             )
         }
@@ -874,14 +876,14 @@ private fun DownloadTaskCard(
                     DownloadTaskEntity.STATUS_PENDING,
                     DownloadTaskEntity.STATUS_PREPARING,
                     DownloadTaskEntity.STATUS_RETRY_WAIT -> IconButton(onClick = onPause) {
-                        Icon(Icons.Outlined.Pause, contentDescription = "暂停", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Outlined.Pause, contentDescription = tr("暂停"), tint = MaterialTheme.colorScheme.primary)
                     }
                     DownloadTaskEntity.STATUS_PAUSED,
                     DownloadTaskEntity.STATUS_INTERRUPTED -> IconButton(onClick = onResume) {
-                        Icon(Icons.Outlined.PlayArrow, contentDescription = "继续", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Outlined.PlayArrow, contentDescription = tr("继续"), tint = MaterialTheme.colorScheme.primary)
                     }
                     DownloadTaskEntity.STATUS_FAILED -> IconButton(onClick = onResume) {
-                        Icon(Icons.Outlined.Refresh, contentDescription = "重试", tint = MaterialTheme.colorScheme.error)
+                        Icon(Icons.Outlined.Refresh, contentDescription = tr("重试"), tint = MaterialTheme.colorScheme.error)
                     }
                                         DownloadTaskEntity.STATUS_COMPLETED -> Row {
                         // APK 文件：额外显示「安装」按钮
@@ -889,7 +891,7 @@ private fun DownloadTaskCard(
                             IconButton(onClick = { installApk(context, task.savePath, task.fileName) }) {
                                 Icon(
                                     imageVector = Icons.Outlined.SystemUpdate,
-                                    contentDescription = "安装",
+                                    contentDescription = tr("安装"),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -897,7 +899,7 @@ private fun DownloadTaskCard(
                         IconButton(onClick = {
                             openSavedFile(context, task.savePath)
                         }) {
-                            Icon(Icons.Outlined.OpenInNew, contentDescription = "打开", tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Outlined.OpenInNew, contentDescription = tr("打开"), tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -908,7 +910,7 @@ private fun DownloadTaskCard(
             // 失败原因（红色小字展示具体错误）
             if (task.status in setOf(DownloadTaskEntity.STATUS_FAILED, DownloadTaskEntity.STATUS_NEEDS_REAUTH, DownloadTaskEntity.STATUS_NEEDS_INPUT) && task.errorMsg.isNotBlank()) {
                 Text(
-                    text = "失败原因：${task.errorMsg}",
+                    text = tr("失败原因：{0}", task.errorMsg),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error,
                     maxLines = 2,
@@ -926,7 +928,7 @@ private fun DownloadTaskCard(
                 Column {
                     if (isDownloading && stats != null && stats.speed > 0) {
                         Text(
-                            text = "${formatSpeed(stats.speed)} · 剩余 ${formatRemain(stats.remainMillis)} · ${stats.chunkCount} 线程",
+                            text = tr("{0} · 剩余 {1} · {2} 线程", formatSpeed(stats.speed), formatRemain(stats.remainMillis), stats.chunkCount),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -952,7 +954,7 @@ private fun DownloadTaskCard(
                 Text(
                     text = if (task.status == DownloadTaskEntity.STATUS_COMPLETED) {
                         if (task.avgSpeed > 0) {
-                            "平均 ${formatSpeed(task.avgSpeed)} · ${formatSize(task.totalSize)}"
+                            tr("平均 {0} · {1}", formatSpeed(task.avgSpeed), formatSize(task.totalSize))
                         } else {
                             formatSize(task.totalSize)
                         }
@@ -971,7 +973,7 @@ private fun DownloadTaskCard(
                         tint = MaterialTheme.colorScheme.error
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("删除", color = MaterialTheme.colorScheme.error)
+                    Text(tr("删除"), color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -997,7 +999,7 @@ private fun DownloadTaskCard(
                         }) {
                             Icon(Icons.Outlined.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("复制直链")
+                            Text(tr("复制直链"))
                         }
                         TextButton(onClick = {
                             showMenu = false
@@ -1005,7 +1007,7 @@ private fun DownloadTaskCard(
                         }) {
                             Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("重新下载")
+                            Text(tr("重新下载"))
                         }
                         TextButton(onClick = {
                             showMenu = false
@@ -1013,12 +1015,12 @@ private fun DownloadTaskCard(
                         }) {
                             Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("删除任务")
+                            Text(tr("删除任务"))
                         }
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { showMenu = false }) { Text("取消") }
+                    TextButton(onClick = { showMenu = false }) { Text(tr("取消")) }
                 }
             )
         }
@@ -1031,7 +1033,7 @@ private fun copyToClipboard(context: Context, text: String) {
 }
 
 private fun taskStatusLine(task: DownloadTaskEntity): String {
-    val status = DownloadTaskEntity.statusText(task.status)
+    val status = tr(DownloadTaskEntity.statusText(task.status))
     return if (task.totalSize > 0) {
         // 显示值钳制到 total（防恢复竞态残留导致显示超总大小）
         val shown = minOf(task.downloadedSize, task.totalSize)
@@ -1149,11 +1151,11 @@ private fun AddDownloadDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("添加下载任务") },
+        title = { Text(tr("添加下载任务")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    text = "下载文件将保存到 ${Environment.DIRECTORY_DOWNLOADS} 目录",
+                    text = tr("下载文件将保存到 {0} 目录", Environment.DIRECTORY_DOWNLOADS),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1164,14 +1166,14 @@ private fun AddDownloadDialog(
                         if (name.isBlank()) name = it.substringAfterLast('/').take(80)
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("文件直链 URL") },
+                    placeholder = { Text(tr("文件直链 URL")) },
                     singleLine = true
                 )
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("保存文件名") },
+                    placeholder = { Text(tr("保存文件名")) },
                     singleLine = true
                 )
             }
@@ -1180,10 +1182,10 @@ private fun AddDownloadDialog(
             Button(
                 onClick = { onConfirm(url.trim(), name.trim()) },
                 enabled = url.isNotBlank() && name.isNotBlank()
-            ) { Text("开始下载") }
+            ) { Text(tr("开始下载")) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(tr("取消")) }
         }
     )
 }
