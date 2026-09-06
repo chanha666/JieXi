@@ -32,7 +32,7 @@ data class PersistedTask(
 )
 
 data class DesktopHistory(val id: String, val link: String, val title: String, val platform: String, val createdAt: Long)
-data class DesktopFavorite(val id: String, val link: String, val title: String, val platform: String, val createdAt: Long)
+data class DesktopFavorite(val id: String, val link: String, val title: String, val platform: String, val createdAt: Long, val category: String = "未分类")
 
 class DesktopStateStore(
     private val file: File = DesktopDataPaths.stateFile()
@@ -103,6 +103,6 @@ class DesktopStateStore(
 
     private fun parseHistory(j: JSONObject) = DesktopHistory(j.optString("id"), j.optString("link"), j.optString("title"), j.optString("platform"), j.optLong("createdAt"))
     private fun historyJson(h: DesktopHistory) = JSONObject().put("id", h.id).put("link", h.link).put("title", h.title).put("platform", h.platform).put("createdAt", h.createdAt)
-    private fun parseFavorite(j: JSONObject) = DesktopFavorite(j.optString("id"), j.optString("link"), j.optString("title"), j.optString("platform"), j.optLong("createdAt"))
-    private fun favoriteJson(f: DesktopFavorite) = JSONObject().put("id", f.id).put("link", f.link).put("title", f.title).put("platform", f.platform).put("createdAt", f.createdAt)
+    private fun parseFavorite(j: JSONObject) = DesktopFavorite(j.optString("id"), j.optString("link"), j.optString("title"), j.optString("platform"), j.optLong("createdAt"), j.optString("category", "未分类"))
+    private fun favoriteJson(f: DesktopFavorite) = JSONObject().put("id", f.id).put("link", f.link).put("title", f.title).put("platform", f.platform).put("createdAt", f.createdAt).put("category", f.category)
 }

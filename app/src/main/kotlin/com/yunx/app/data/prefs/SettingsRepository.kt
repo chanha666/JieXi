@@ -182,7 +182,7 @@ class SettingsRepository(context: Context) {
         const val DEFAULT_DOWNLOAD_RETRY_COUNT = 3
 
         /** 默认主题种子色：Material Blue（与内置默认方案一致） */
-        const val DEFAULT_SEED_COLOR = 0xFFD76524L
+        const val DEFAULT_SEED_COLOR = 0xFFB65326L
 
         fun normalizeGitHubRepository(value: String): String {
             val trimmed = value.trim().removeSuffix("/").removeSuffix(".git")

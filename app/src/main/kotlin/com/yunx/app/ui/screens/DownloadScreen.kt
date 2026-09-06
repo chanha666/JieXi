@@ -73,6 +73,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import com.fuke.mobile.EmbeddedMediaTasks
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -102,12 +106,14 @@ import java.io.File
 fun DownloadScreen(
     scrollBehavior: TopAppBarScrollBehavior,
     viewModel: DownloadViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    initialMedia: Boolean = false
 ) {
     val context = LocalContext.current
     val tasks by viewModel.tasks.collectAsState()
     val stats by viewModel.stats.collectAsState()
     val mediaTasks by TaskStore.tasks.collectAsState()
+    var showMedia by rememberSaveable(initialMedia) { mutableStateOf(initialMedia) }
     var showAddDialog by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<DownloadTaskEntity?>(null) }
     var showDeleteAllConfirm by remember { mutableStateOf(false) }
@@ -129,12 +135,13 @@ fun DownloadScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            MediaQueueEntry(
-                total = mediaTasks.size,
-                active = mediaTasks.count { it.status == TaskStatus.QUEUED || it.status == TaskStatus.RUNNING },
-                onClick = { context.startActivity(Intent(context, MediaActivity::class.java)) }
-            )
-            if (tasks.isEmpty()) {
+            TabRow(selectedTabIndex = if (showMedia) 1 else 0, containerColor = MaterialTheme.colorScheme.surface) {
+                Tab(selected = !showMedia, onClick = { showMedia = false }, text = { Text("网盘与文件 · ${tasks.size}") })
+                Tab(selected = showMedia, onClick = { showMedia = true }, text = { Text("视频与音频 · ${mediaTasks.size}") })
+            }
+            if (showMedia) {
+                Box(Modifier.weight(1f)) { EmbeddedMediaTasks() }
+            } else if (tasks.isEmpty()) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     EmptyDownloadState()
                 }
@@ -197,7 +204,7 @@ fun DownloadScreen(
                 }
             }
         }
-        FloatingActionButton(
+        if (!showMedia) FloatingActionButton(
             onClick = {
                 if (hasPermission) showAddDialog = true
                 else permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)

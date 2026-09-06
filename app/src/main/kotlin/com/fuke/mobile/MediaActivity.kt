@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -116,13 +117,12 @@ class MediaActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         readSharedText(intent)
-        setContent {
-            FukeTheme {
-                FukeRoot(incomingShare.collectAsState().value)
-            }
-        }
+        startActivity(Intent(this, com.yunx.app.MainActivity::class.java)
+            .putExtra(com.yunx.app.MainActivity.EXTRA_SHARED_TEXT, incomingShare.value.text)
+            .putExtra("destination", if (incomingShare.value.text.isBlank()) "download-media" else "")
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
+        finish()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -149,185 +149,40 @@ class MediaActivity : ComponentActivity() {
 
 private data class SharedPayload(val text: String = "", val token: Long = 0L)
 
-private enum class Screen(val label: String, val glyph: String) {
-    HOME("下载", "↓"), TASKS("任务", "≡"), TOOLS("工具", "◇"), SETTINGS("设置", "⚙")
-}
-
 @Composable
-private fun FukeRoot(shared: SharedPayload) {
+fun EmbeddedMediaResolver(text: String, token: Long, onDownload: () -> Unit) {
     val context = LocalContext.current
-    var screen by rememberSaveable { mutableStateOf(Screen.HOME) }
-    var showSponsor by rememberSaveable { mutableStateOf(false) }
-    val tasks by TaskStore.tasks.collectAsState()
-    val coreState by Engine.state.collectAsState()
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
+    val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
     LaunchedEffect(Unit) {
         val missing = buildList {
-            if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                add(Manifest.permission.POST_NOTIFICATIONS)
-            }
-            if (Build.VERSION.SDK_INT in 24..28 && ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT in 24..28 &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
         }
-        if (missing.isNotEmpty()) permissionLauncher.launch(missing.toTypedArray())
+        if (missing.isNotEmpty()) permissions.launch(missing.toTypedArray())
     }
-    Scaffold(
-        containerColor = Cream,
-        topBar = { AppTopBar(screen, coreState) { showSponsor = true } },
-        bottomBar = { BottomBar(screen) { screen = it } }
-    ) { inner ->
-        Box(Modifier.fillMaxSize().padding(inner).imePadding()) {
-            when (screen) {
-                Screen.HOME -> DownloadScreen(shared.text, shared.token) { screen = Screen.TASKS }
-                Screen.TASKS -> TasksScreen(tasks)
-                Screen.TOOLS -> ToolsScreen()
-                Screen.SETTINGS -> SettingsScreen(coreState)
-            }
-        }
-    }
-    if (showSponsor) SponsorDialog { showSponsor = false }
+    DownloadScreen(text, token, embedded = true, showTasks = onDownload)
 }
 
 @Composable
-private fun AppTopBar(screen: Screen, coreState: String, onSponsor: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().background(Cream).statusBarsPadding().height(64.dp).padding(horizontal = 18.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        FukeMark(34.dp)
-        Spacer(Modifier.width(11.dp))
-        Column(Modifier.weight(1f)) {
-            Text(if (screen == Screen.HOME) "解析 · 媒体" else screen.label, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-            Text(if (screen == Screen.HOME) "公开资源 · 最高开放画质" else coreState, fontSize = 10.sp, color = Muted, maxLines = 1)
-        }
-        if (screen == Screen.HOME) {
-            TextButton(onClick = onSponsor, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
-                Text("♡ 赞赏", color = Orange, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-            }
-            Spacer(Modifier.width(4.dp))
-        }
-        Text(BuildConfig.VERSION_NAME, fontSize = 10.sp, color = Orange, modifier = Modifier.border(1.dp, Line, CircleShape).padding(horizontal = 9.dp, vertical = 5.dp))
-    }
+fun EmbeddedMediaTasks() {
+    val tasks by TaskStore.tasks.collectAsState()
+    TasksScreen(tasks)
 }
 
 @Composable
-private fun SponsorDialog(onDismiss: () -> Unit) {
-    var enlargedImage by remember { mutableIntStateOf(0) }
-    Dialog(
-        onDismissRequest = { if (enlargedImage != 0) enlargedImage = 0 else onDismiss() },
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        if (enlargedImage != 0) {
-            Box(
-                Modifier.fillMaxSize().background(Color(0xD93A2A20)).clickable { enlargedImage = 0 }.padding(18.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(enlargedImage),
-                    contentDescription = "赞赏二维码大图",
-                    modifier = Modifier.fillMaxWidth().fillMaxHeight(.9f).clip(RoundedCornerShape(18.dp)),
-                    contentScale = ContentScale.Fit
-                )
-                Text("点击空白处返回", color = Color.White, fontSize = 11.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
-            }
-        } else {
-            Card(
-                modifier = Modifier.fillMaxWidth(.94f).fillMaxHeight(.9f),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Paper),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Line)
-            ) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(20.dp, 20.dp, 20.dp, 28.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    item {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text("支持解析", color = Orange, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                Spacer(Modifier.height(5.dp))
-                                Text("如果你觉得软件好用，欢迎支持一下作者", fontSize = 21.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
-                            }
-                            TextButton(onClick = onDismiss) { Text("关闭", color = Muted) }
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Text("你的鼓励会用于解析器维护、网站兼容更新和使用体验改进，让“解析”继续保持简单、稳定和好用。", color = Muted, fontSize = 12.sp, lineHeight = 20.sp)
-                        Spacer(Modifier.height(10.dp))
-                        Row(Modifier.fillMaxWidth().border(1.dp, Line, RoundedCornerShape(12.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("♡", color = Orange, fontSize = 20.sp)
-                            Spacer(Modifier.width(9.dp))
-                            Column {
-                                Text("完全自愿", color = Orange, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                                Text("不会解锁额外功能，也不影响下载、画质或更新。", color = Muted, fontSize = 10.sp)
-                            }
-                        }
-                    }
-                    item { SponsorCodeCard("支付宝", "打开支付宝扫一扫", R.drawable.donate_alipay, Color(0xFF1677FF)) { enlargedImage = R.drawable.donate_alipay } }
-                    item { SponsorCodeCard("微信赞赏", "打开微信扫一扫", R.drawable.donate_wechat, Color(0xFFD4A92D)) { enlargedImage = R.drawable.donate_wechat } }
-                    item {
-                        Text("二维码在本机上时，可先点击放大并截图，再从支付应用的相册识别；也可以使用另一台设备扫码。", color = Muted, fontSize = 10.sp, lineHeight = 17.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                        Spacer(Modifier.height(4.dp))
-                        Text("感谢每一份支持，也感谢你愿意使用“解析”。", color = Orange, fontSize = 11.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                    }
-                }
-            }
-        }
-    }
-}
+fun EmbeddedMediaTools() = ToolsScreen()
 
 @Composable
-private fun SponsorCodeCard(title: String, subtitle: String, image: Int, accent: Color, onOpen: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Line)
-    ) {
-        Column(Modifier.fillMaxWidth().padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(accent), contentAlignment = Alignment.Center) {
-                    Text(if (title == "支付宝") "支" else "赏", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-                Spacer(Modifier.width(10.dp))
-                Column { Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold); Text(subtitle, fontSize = 10.sp, color = Muted) }
-            }
-            Spacer(Modifier.height(12.dp))
-            Image(
-                painter = painterResource(image),
-                contentDescription = "$title 赞赏二维码",
-                modifier = Modifier.fillMaxWidth().height(380.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFFF8F8F8)).clickable(onClick = onOpen),
-                contentScale = ContentScale.Fit
-            )
-            Text("点击二维码放大查看", fontSize = 10.sp, color = Muted, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
-        }
-    }
-}
-
-@Composable
-private fun BottomBar(selected: Screen, onSelect: (Screen) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().background(Paper).border(1.dp, Line).navigationBarsPadding().height(66.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Screen.entries.forEach { item ->
-            Column(
-                Modifier.weight(1f).fillMaxHeight().clickable { onSelect(item) },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(item.glyph, fontSize = 18.sp, color = if (item == selected) Orange else Muted)
-                Text(item.label, fontSize = 10.sp, fontWeight = if (item == selected) FontWeight.SemiBold else FontWeight.Normal, color = if (item == selected) Orange else Muted)
-            }
-        }
-    }
+fun EmbeddedMediaSettings() {
+    val state by Engine.state.collectAsState()
+    SettingsScreen(state)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DownloadScreen(sharedText: String, sharedToken: Long, showTasks: () -> Unit) {
+private fun DownloadScreen(sharedText: String, sharedToken: Long, embedded: Boolean = false, showTasks: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
@@ -340,13 +195,29 @@ private fun DownloadScreen(sharedText: String, sharedToken: Long, showTasks: () 
     var embedSubtitles by rememberSaveable { mutableStateOf(false) }
     val settings = AppPrefs.read(context)
 
-    LaunchedEffect(sharedToken) { if (sharedText.isNotBlank()) input = sharedText }
+    LaunchedEffect(sharedToken) {
+        if (sharedText.isNotBlank()) input = sharedText
+        if (embedded && sharedText.isNotBlank()) {
+            val url = extractUrls(sharedText).firstOrNull()
+            if (url != null) {
+                analyzing = true; error = ""; preview = null
+                try {
+                    preview = withContext(Dispatchers.IO) { analyzeVideo(context, url) }
+                    selectedFormat = preview?.formats?.firstOrNull()
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    error = cleanUiError(failure)
+                } finally { analyzing = false }
+            }
+        }
+    }
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(18.dp, 22.dp, 18.dp, 42.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item {
+        if (!embedded) item {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 FukeMark(58.dp)
                 Spacer(Modifier.height(14.dp))
@@ -355,9 +226,9 @@ private fun DownloadScreen(sharedText: String, sharedToken: Long, showTasks: () 
                 Text("无需登录 · 自动获取匿名公开的最高视频与音频", fontSize = 12.sp, color = Muted, textAlign = TextAlign.Center)
             }
         }
-        item {
+        if (!embedded || (!analyzing && preview == null)) item {
             OutlineCard {
-                Text("视频链接或分享文字", fontSize = 11.sp, color = Muted)
+                Text("视频链接或分享文字", fontSize = 12.sp, color = Muted)
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = input,
@@ -397,15 +268,15 @@ private fun DownloadScreen(sharedText: String, sharedToken: Long, showTasks: () 
                 }
                 if (error.isNotBlank()) {
                     Spacer(Modifier.height(10.dp))
-                    Text(error, color = Danger, fontSize = 11.sp, lineHeight = 16.sp)
+                    Text(error, color = Danger, fontSize = 12.sp, lineHeight = 18.sp)
                 }
             }
         }
-        item {
-            Text("常用平台", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(listOf("YouTube", "哔哩哔哩", "抖音", "X", "TikTok", "小红书", "微博", "直链流")) { platform -> PlatformChip(platform) }
+        if (embedded && analyzing) item {
+            Column(Modifier.fillMaxWidth().padding(vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                androidx.compose.material3.CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.height(16.dp))
+                Text("正在读取视频与可用画质…", style = MaterialTheme.typography.bodyLarge)
             }
         }
         preview?.let { info ->
@@ -419,11 +290,11 @@ private fun DownloadScreen(sharedText: String, sharedToken: Long, showTasks: () 
                         )
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(info.platform, color = Orange, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                            Text(info.platform, color = Orange, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                             Text(info.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            Text(listOf(info.uploader, formatDuration(info.durationSeconds), "${info.formats.size} 种画质").filter { it.isNotBlank() }.joinToString(" · "), fontSize = 10.sp, color = Muted, maxLines = 1)
+                            Text(listOf(info.uploader, formatDuration(info.durationSeconds), "${info.formats.size} 种画质").filter { it.isNotBlank() }.joinToString(" · "), fontSize = 12.sp, color = Muted, maxLines = 1)
                             if (info.platform in setOf("抖音", "TikTok", "小红书", "微博", "X")) {
-                                Text("✓ 已自动优先提取无水印源", color = Success, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                                Text("优先使用平台公开提供的原始视频", color = Muted, fontSize = 12.sp)
                             }
                         }
                     }
@@ -448,14 +319,14 @@ private fun DownloadScreen(sharedText: String, sharedToken: Long, showTasks: () 
                         Checkbox(checked = embedSubtitles, onCheckedChange = { embedSubtitles = it })
                         Column {
                             Text("尝试嵌入中英文字幕", fontSize = 12.sp)
-                            Text("只有网站公开提供字幕时才会生效", fontSize = 10.sp, color = Muted)
+                            Text("只有网站公开提供字幕时才会生效", fontSize = 12.sp, color = Muted)
                         }
                     }
                 }
             }
         }
         item {
-            PrimaryButton(text = "加入队列并开始下载", modifier = Modifier.fillMaxWidth(), enabled = extractUrls(input).isNotEmpty()) {
+            PrimaryButton(text = "开始下载", modifier = Modifier.fillMaxWidth(), enabled = !analyzing && preview != null && extractUrls(input).isNotEmpty()) {
                 val urls = extractUrls(input)
                 val chosen = selectedFormat ?: defaultChoice(settings.defaultQuality)
                 val count = TaskStore.addAll(urls.map { url ->
@@ -476,9 +347,6 @@ private fun DownloadScreen(sharedText: String, sharedToken: Long, showTasks: () 
                     showTasks()
                 } else Toast.makeText(context, "这些链接已经在任务中", Toast.LENGTH_SHORT).show()
             }
-        }
-        item {
-            Text("公开视频提供 4K 或 8K 时可以下载；登录专属、会员画质和 DRM 加密内容不会要求你登录。", fontSize = 10.sp, lineHeight = 16.sp, color = Muted, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp))
         }
     }
 }
@@ -503,15 +371,10 @@ private fun TasksScreen(tasks: List<DownloadTask>) {
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("任务与历史", fontSize = 26.sp, fontWeight = FontWeight.Bold)
-                Text("排队、暂停续传和已完成文件都在这里", fontSize = 11.sp, color = Muted)
+                Text("视频与音频", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text("共 ${tasks.size} 个任务", fontSize = 15.sp, color = Muted)
             }
             TextButton(onClick = { DownloadService.clearFinished(context) }) { Text("清理完成") }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SummaryBox("等待", tasks.count { it.status == TaskStatus.QUEUED }, Modifier.weight(1f))
-            SummaryBox("下载中", tasks.count { it.status == TaskStatus.RUNNING }, Modifier.weight(1f))
-            SummaryBox("已暂停", tasks.count { it.status == TaskStatus.PAUSED }, Modifier.weight(1f))
         }
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, placeholder = { Text("搜索标题、平台或链接") }, shape = RoundedCornerShape(11.dp))
@@ -525,7 +388,7 @@ private fun TasksScreen(tasks: List<DownloadTask>) {
             Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 Text("↓", fontSize = 34.sp, color = Orange)
                 Text(if (tasks.isEmpty()) "还没有下载任务" else "没有符合条件的记录", fontWeight = FontWeight.SemiBold)
-                Text("从下载页粘贴链接即可开始", color = Muted, fontSize = 11.sp)
+                Text("在解析页粘贴链接即可开始", color = Muted, fontSize = 15.sp)
             }
         } else {
             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(9.dp), contentPadding = PaddingValues(bottom = 28.dp)) {
@@ -545,18 +408,25 @@ private fun TaskCard(task: DownloadTask, context: android.content.Context) {
             Spacer(Modifier.width(11.dp))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(task.title, Modifier.weight(1f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(task.title, Modifier.weight(1f), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Spacer(Modifier.width(8.dp))
-                    Text(statusLabel(task.status), fontSize = 9.sp, color = statusColor(task.status), modifier = Modifier.border(1.dp, statusColor(task.status).copy(alpha = .3f), CircleShape).padding(horizontal = 7.dp, vertical = 3.dp))
+                    Text(statusLabel(task.status), fontSize = 12.sp, color = statusColor(task.status), modifier = Modifier.border(1.dp, statusColor(task.status).copy(alpha = .3f), CircleShape).padding(horizontal = 7.dp, vertical = 3.dp))
                 }
                 Text(
-                    listOf(task.platform, task.qualityLabel, task.stage, task.speed).filter { it.isNotBlank() }.joinToString(" · "),
-                    fontSize = 10.sp,
+                    listOf(task.platform, task.qualityLabel, task.stage).filter { it.isNotBlank() }.joinToString(" · "),
+                    fontSize = 12.sp,
                     color = Muted,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(8.dp))
+                if (task.status == TaskStatus.RUNNING) {
+                    Text(listOf("${task.progress.coerceIn(0, 100)}%", task.speed,
+                        task.eta.takeIf { it.isNotBlank() }?.let { "剩余 $it" }.orEmpty())
+                        .filter { it.isNotBlank() }.joinToString(" · "),
+                        style = MaterialTheme.typography.bodyMedium, color = Orange)
+                    Spacer(Modifier.height(6.dp))
+                }
                 if (task.status == TaskStatus.RUNNING && task.progress == 0 && task.totalBytes <= 0L) {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(3.dp), color = Orange, trackColor = OrangeSoft)
                 } else {
@@ -565,12 +435,12 @@ private fun TaskCard(task: DownloadTask, context: android.content.Context) {
                 if (task.downloadedBytes > 0L) {
                     Text(
                         if (task.totalBytes > 0L) "${formatBytes(task.downloadedBytes)} / ${formatBytes(task.totalBytes)}" else formatBytes(task.downloadedBytes),
-                        fontSize = 9.sp,
+                        fontSize = 12.sp,
                         color = Muted,
                         modifier = Modifier.padding(top = 5.dp)
                     )
                 }
-                if (task.error.isNotBlank()) Text(task.error, fontSize = 10.sp, lineHeight = 14.sp, color = if (task.status == TaskStatus.FAILED) Danger else Muted, modifier = Modifier.padding(top = 6.dp), maxLines = 3, overflow = TextOverflow.Ellipsis)
+                if (task.error.isNotBlank()) Text(task.error, fontSize = 12.sp, lineHeight = 18.sp, color = if (task.status == TaskStatus.FAILED) Danger else Muted, modifier = Modifier.padding(top = 6.dp), maxLines = 3, overflow = TextOverflow.Ellipsis)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     when (task.status) {
                         TaskStatus.RUNNING -> {
@@ -633,11 +503,11 @@ private fun ToolsScreen() {
         }
     }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("实用工具", fontSize = 26.sp, fontWeight = FontWeight.Bold)
-        Text("下载之外常用的本地媒体处理", fontSize = 11.sp, color = Muted)
+        Text("本地处理", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text("下载之外常用的本地媒体处理", fontSize = 12.sp, color = Muted)
         Spacer(Modifier.height(14.dp))
         OutlineCard {
-            Text("截图时间点", fontSize = 11.sp, color = Muted)
+            Text("截图时间点", fontSize = 12.sp, color = Muted)
             OutlinedTextField(value = screenshotSeconds, onValueChange = { screenshotSeconds = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, suffix = { Text("秒") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
         }
         Spacer(Modifier.height(12.dp))
@@ -690,7 +560,7 @@ private fun SettingsScreen(coreState: String) {
     var updating by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp, 16.dp, 16.dp, 34.dp)) {
         Text("软件设置", fontSize = 26.sp, fontWeight = FontWeight.Bold)
-        Text("管理默认画质、网络与下载核心", fontSize = 11.sp, color = Muted)
+        Text("管理默认画质、网络与下载核心", fontSize = 12.sp, color = Muted)
         Spacer(Modifier.height(14.dp))
         SectionLabel("下载")
         SettingsCard {
@@ -709,7 +579,7 @@ private fun SettingsScreen(coreState: String) {
             Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 SettingGlyph("网")
                 Spacer(Modifier.width(11.dp))
-                Column(Modifier.weight(1f)) { Text("仅 Wi-Fi 下载", fontSize = 13.sp, fontWeight = FontWeight.Medium); Text("避免意外消耗移动数据", fontSize = 10.sp, color = Muted) }
+                Column(Modifier.weight(1f)) { Text("仅 Wi-Fi 下载", fontSize = 15.sp, fontWeight = FontWeight.Medium); Text("避免意外消耗移动数据", fontSize = 12.sp, color = Muted) }
                 Switch(checked = settings.wifiOnly, onCheckedChange = { settings = settings.copy(wifiOnly = it); AppPrefs.write(context, settings) })
             }
             HorizontalDivider(color = Line)
@@ -727,7 +597,7 @@ private fun SettingsScreen(coreState: String) {
         SectionLabel("支持")
         SettingsCard {
             Column(Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) { SettingGlyph("核"); Spacer(Modifier.width(11.dp)); Column(Modifier.weight(1f)) { Text("下载核心", fontSize = 13.sp, fontWeight = FontWeight.Medium); Text(coreState, fontSize = 10.sp, color = Muted) } }
+                Row(verticalAlignment = Alignment.CenterVertically) { SettingGlyph("核"); Spacer(Modifier.width(11.dp)); Column(Modifier.weight(1f)) { Text("下载核心", fontSize = 15.sp, fontWeight = FontWeight.Medium); Text(coreState, fontSize = 12.sp, color = Muted) } }
                 Spacer(Modifier.height(9.dp))
                 OutlinedButton(onClick = {
                     updating = true
@@ -748,7 +618,7 @@ private fun SettingsScreen(coreState: String) {
         SectionLabel("关于")
         SettingsCard {
             Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                FukeMark(40.dp); Spacer(Modifier.width(12.dp)); Column(Modifier.weight(1f)) { Text("解析 Android", fontWeight = FontWeight.SemiBold); Text("网盘、公开视频下载与本地媒体工具", fontSize = 10.sp, color = Muted) }; Text(BuildConfig.VERSION_NAME, color = Orange, fontSize = 11.sp)
+                FukeMark(40.dp); Spacer(Modifier.width(12.dp)); Column(Modifier.weight(1f)) { Text("解析 Android", fontWeight = FontWeight.SemiBold); Text("网盘、公开视频下载与本地媒体工具", fontSize = 12.sp, color = Muted) }; Text(BuildConfig.VERSION_NAME, color = Orange, fontSize = 12.sp)
             }
         }
     }
@@ -768,39 +638,39 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) = OutlineC
 private fun PrimaryButton(text: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) .97f else 1f, tween(120, easing = CubicBezierEasing(.23f, 1f, .32f, 1f)), label = "buttonPress")
-    Button(onClick = onClick, enabled = enabled, modifier = modifier.scale(scale).height(50.dp), interactionSource = interaction, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Orange)) { Text(text, fontWeight = FontWeight.SemiBold) }
+    val scale by animateFloatAsState(if (pressed) .97f else 1f, tween(if (com.yunx.app.data.prefs.SettingsRepository(LocalContext.current).reduceMotion || (Build.VERSION.SDK_INT >= 26 && !android.animation.ValueAnimator.areAnimatorsEnabled())) 0 else 120, easing = CubicBezierEasing(.23f, 1f, .32f, 1f)), label = "buttonPress")
+    Button(onClick = onClick, enabled = enabled, modifier = modifier.scale(scale).heightIn(min = 52.dp), interactionSource = interaction, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Orange)) { Text(text, fontWeight = FontWeight.SemiBold) }
 }
 
 @Composable
 private fun FukeMark(size: androidx.compose.ui.unit.Dp) {
     Image(
-        painter = painterResource(R.drawable.icon),
+        painter = painterResource(R.drawable.jiexi_mark),
         contentDescription = "解析",
         modifier = Modifier.size(size)
     )
 }
 
 @Composable
-private fun PlatformChip(label: String) { Row(Modifier.border(1.dp, Line, RoundedCornerShape(11.dp)).background(Paper, RoundedCornerShape(11.dp)).padding(horizontal = 12.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) { Text(label.take(1), color = Orange, fontWeight = FontWeight.Bold); Spacer(Modifier.width(7.dp)); Text(label, fontSize = 11.sp) } }
+private fun PlatformChip(label: String) { Row(Modifier.border(1.dp, Line, RoundedCornerShape(11.dp)).background(Paper, RoundedCornerShape(11.dp)).padding(horizontal = 12.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) { Text(label.take(1), color = Orange, fontWeight = FontWeight.Bold); Spacer(Modifier.width(7.dp)); Text(label, fontSize = 12.sp) } }
 
 @Composable
-private fun FilterChip(label: String, active: Boolean, onClick: () -> Unit) { Text(label, fontSize = 10.sp, color = if (active) Orange else Muted, modifier = Modifier.clip(CircleShape).background(if (active) OrangeSoft else Paper).border(1.dp, if (active) Orange.copy(alpha = .3f) else Line, CircleShape).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 7.dp)) }
+private fun FilterChip(label: String, active: Boolean, onClick: () -> Unit) { Text(label, fontSize = 12.sp, color = if (active) Orange else Muted, modifier = Modifier.clip(CircleShape).background(if (active) OrangeSoft else Paper).border(1.dp, if (active) Orange.copy(alpha = .3f) else Line, CircleShape).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 7.dp)) }
 
 @Composable
-private fun SummaryBox(label: String, count: Int, modifier: Modifier) { Column(modifier.border(1.dp, Line, RoundedCornerShape(11.dp)).background(Paper, RoundedCornerShape(11.dp)).padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) { Text(count.toString(), color = Orange, fontSize = 20.sp, fontWeight = FontWeight.Bold); Text(label, color = Muted, fontSize = 9.sp) } }
+private fun SummaryBox(label: String, count: Int, modifier: Modifier) { Column(modifier.border(1.dp, Line, RoundedCornerShape(11.dp)).background(Paper, RoundedCornerShape(11.dp)).padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) { Text(count.toString(), color = Orange, fontSize = 20.sp, fontWeight = FontWeight.Bold); Text(label, color = Muted, fontSize = 12.sp) } }
 
 @Composable
-private fun ToolCard(glyph: String, title: String, body: String, busy: Boolean, onClick: () -> Unit) { val interaction = remember { MutableInteractionSource() }; val pressed by interaction.collectIsPressedAsState(); val scale by animateFloatAsState(if (pressed) .975f else 1f, tween(120, easing = CubicBezierEasing(.23f, 1f, .32f, 1f)), label = "cardPress"); Column(Modifier.fillMaxWidth().height(172.dp).scale(scale).border(1.dp, Line, RoundedCornerShape(16.dp)).background(Paper, RoundedCornerShape(16.dp)).clickable(interactionSource = interaction, indication = null, enabled = !busy, onClick = onClick).padding(15.dp)) { Text(glyph, color = Orange, fontSize = 24.sp); Spacer(Modifier.height(18.dp)); Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold); Text(body, color = Muted, fontSize = 10.sp, lineHeight = 15.sp); Spacer(Modifier.weight(1f)); Text(if (busy) "处理中…" else "开始使用 →", color = Orange, fontSize = 10.sp, fontWeight = FontWeight.SemiBold) } }
+private fun ToolCard(glyph: String, title: String, body: String, busy: Boolean, onClick: () -> Unit) { val interaction = remember { MutableInteractionSource() }; val pressed by interaction.collectIsPressedAsState(); val scale by animateFloatAsState(if (pressed) .975f else 1f, tween(if (com.yunx.app.data.prefs.SettingsRepository(LocalContext.current).reduceMotion || (Build.VERSION.SDK_INT >= 26 && !android.animation.ValueAnimator.areAnimatorsEnabled())) 0 else 120, easing = CubicBezierEasing(.23f, 1f, .32f, 1f)), label = "cardPress"); Column(Modifier.fillMaxWidth().height(200.dp).scale(scale).border(1.dp, Line, RoundedCornerShape(16.dp)).background(Paper, RoundedCornerShape(16.dp)).clickable(interactionSource = interaction, indication = null, enabled = !busy, onClick = onClick).padding(15.dp)) { Text(glyph, color = Orange, fontSize = 24.sp); Spacer(Modifier.height(18.dp)); Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold); Text(body, color = Muted, fontSize = 12.sp, lineHeight = 18.sp); Spacer(Modifier.weight(1f)); Text(if (busy) "处理中…" else "开始使用 →", color = Orange, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) } }
 
 @Composable
-private fun SectionLabel(text: String) { Text(text, fontSize = 11.sp, color = Orange, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 3.dp, bottom = 7.dp)) }
+private fun SectionLabel(text: String) { Text(text, fontSize = 12.sp, color = Orange, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 3.dp, bottom = 7.dp)) }
 
 @Composable
 private fun SettingGlyph(text: String) { Box(Modifier.size(34.dp).border(1.dp, Line, RoundedCornerShape(9.dp)), contentAlignment = Alignment.Center) { Text(text, color = Orange, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) } }
 
 @Composable
-private fun SettingRow(glyph: String, title: String, value: String, onClick: () -> Unit) { Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) { SettingGlyph(glyph); Spacer(Modifier.width(11.dp)); Column(Modifier.weight(1f)) { Text(title, fontSize = 13.sp, fontWeight = FontWeight.Medium); Text(value, fontSize = 10.sp, color = Muted, maxLines = 1, overflow = TextOverflow.Ellipsis) }; Text("›", color = Orange, fontSize = 20.sp) } }
+private fun SettingRow(glyph: String, title: String, value: String, onClick: () -> Unit) { Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) { SettingGlyph(glyph); Spacer(Modifier.width(11.dp)); Column(Modifier.weight(1f)) { Text(title, fontSize = 15.sp, fontWeight = FontWeight.Medium); Text(value, fontSize = 12.sp, color = Muted, maxLines = 1, overflow = TextOverflow.Ellipsis) }; Text("›", color = Orange, fontSize = 20.sp) } }
 
 private fun extractUrls(text: String): List<String> = Regex("https?://[^\\s<>\\\"']+", RegexOption.IGNORE_CASE).findAll(text).map { it.value.trimEnd('，', '。', '；', '！', ')', '）', '】') }.distinct().toList()
 
@@ -905,7 +775,8 @@ private fun analyzeVideo(context: android.content.Context, url: String): VideoPr
 private fun statusRank(status: TaskStatus) = when (status) { TaskStatus.RUNNING -> 0; TaskStatus.QUEUED -> 1; TaskStatus.PAUSED -> 2; TaskStatus.FAILED -> 3; TaskStatus.COMPLETED -> 4; TaskStatus.CANCELED -> 5 }
 private fun statusLabel(status: TaskStatus) = when (status) { TaskStatus.QUEUED -> "等待"; TaskStatus.RUNNING -> "下载中"; TaskStatus.PAUSED -> "已暂停"; TaskStatus.COMPLETED -> "已完成"; TaskStatus.FAILED -> "失败"; TaskStatus.CANCELED -> "已取消" }
 private fun statusGlyph(status: TaskStatus) = when (status) { TaskStatus.COMPLETED -> "✓"; TaskStatus.FAILED -> "!"; TaskStatus.PAUSED -> "Ⅱ"; TaskStatus.RUNNING -> "↓"; else -> "▶" }
-private fun statusColor(status: TaskStatus) = when (status) { TaskStatus.COMPLETED -> Success; TaskStatus.FAILED -> Danger; TaskStatus.PAUSED -> Color(0xFFA65A18); else -> Orange }
+@Composable
+private fun statusColor(status: TaskStatus) = when (status) { TaskStatus.COMPLETED -> Success; TaskStatus.FAILED -> Danger; TaskStatus.PAUSED -> MaterialTheme.colorScheme.tertiary; else -> Orange }
 private fun formatDuration(seconds: Int) = if (seconds <= 0) "" else "%d:%02d".format(seconds / 60, seconds % 60)
 private fun formatBytes(bytes: Long): String = if (bytes >= 1024L * 1024L * 1024L) "%.1f GB".format(bytes / 1073741824.0) else "%.0f MB".format(bytes / 1048576.0)
 private fun qualityLabel(value: String) = when (value) { "1080" -> "最高 1080p"; "720" -> "最高 720p"; "audio" -> "仅音频 MP3"; else -> "匿名最高画质" }

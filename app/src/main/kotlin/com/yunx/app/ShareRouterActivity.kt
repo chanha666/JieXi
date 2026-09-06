@@ -33,13 +33,8 @@ class ShareRouterActivity : Activity() {
             }
             .orEmpty()
         val kind = UnifiedLinkClassifier.classifyText(sharedText).firstOrNull()?.kind
-        val target = if (sharedText.isBlank() || kind == LinkKind.CLOUD_SHARE) {
-            Intent(this, MainActivity::class.java)
-                .putExtra(MainActivity.EXTRA_SHARED_TEXT, sharedText)
-        } else {
-            Intent(this, MediaActivity::class.java)
-                .putExtra(MediaActivity.EXTRA_SHARED_TEXT, sharedText)
-        }
+        val target = Intent(this, MainActivity::class.java)
+            .putExtra(MainActivity.EXTRA_SHARED_TEXT, sharedText)
         startActivity(target.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
         finish()
     }

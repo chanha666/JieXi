@@ -11,6 +11,7 @@ enum class CredentialKey(val storageName: String) {
     XUNLEI_ACCESS_TOKEN("xunlei_access_token"),
     XUNLEI_REFRESH_TOKEN("xunlei_refresh_token"),
     XUNLEI_CAPTCHA_TOKEN("xunlei_captcha_token"),
+    XUNLEI_DEVICE_ID("xunlei_device_id"),
     BAIDU_COOKIE("baidu_cookie"),
     C139_COOKIE("c139_cookie"),
     PAN123_TOKEN("pan123_token")

@@ -1,16 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- 66/108 dp safe zone: no launcher mask can crop the brand knot/arrow. -->
-    <item
-        android:bottom="21dp"
-        android:left="21dp"
-        android:right="21dp"
-        android:top="21dp">
-        <bitmap
-            android:antialias="true"
-            android:dither="true"
-            android:filter="true"
-            android:gravity="fill"
-            android:src="@drawable/icon" />
-    </item>
+    <item android:top="21dp" android:bottom="21dp" android:left="21dp" android:right="21dp"
+        android:drawable="@drawable/jiexi_mark" />
 </layer-list>

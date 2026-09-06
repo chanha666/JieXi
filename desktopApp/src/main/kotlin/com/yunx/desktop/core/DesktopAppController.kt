@@ -32,6 +32,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
+import com.yunx.desktop.system.WindowsWifiConnection
 import kotlinx.coroutines.swing.Swing
 import kotlinx.coroutines.withContext
 import java.awt.Desktop
@@ -40,7 +42,15 @@ import java.net.URI
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-enum class AppPage { RESOLVE, MEDIA, DOWNLOADS, TOOLS, LIBRARY, STATUS, ACCOUNTS, SPONSOR, SETTINGS }
+enum class AppPage {
+    RESOLVE, MEDIA, DOWNLOADS, MINE, TOOLS, LIBRARY, STATUS, ACCOUNTS, CLOUD, APPEARANCE, BACKUP, SPONSOR, SETTINGS;
+    val primaryPage: AppPage get() = when (this) {
+        RESOLVE, MEDIA -> RESOLVE
+        DOWNLOADS -> DOWNLOADS
+        else -> MINE
+    }
+    companion object { val primary = listOf(RESOLVE, DOWNLOADS, MINE) }
+}
 enum class TaskState { WAITING, PREPARING, DOWNLOADING, PAUSED, RETRY_WAIT, INTERRUPTED, NEEDS_REAUTH, NEEDS_INPUT, VERIFYING, COMPLETED, FAILED, CANCELLED }
 
 class DesktopDownloadTask(
@@ -97,14 +107,15 @@ data class PlatformDiagnostic(val name: String, val support: String, val account
 class DesktopAppController(
     val credentialStore: CredentialStore = CredentialStore(),
     val settings: DesktopSettings = DesktopSettings(),
-    private val stateStore: DesktopStateStore = DesktopStateStore()
+    private val stateStore: DesktopStateStore = DesktopStateStore(),
+    private val mediaStoreFile: File = DesktopDataPaths.mediaTasksFile()
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val configuredNetwork = HttpClients.configure(settings.networkProxyConfig())
     private val resolver = DesktopResolver(credentialStore)
     private val downloader = DesktopDownloader()
     private val updater = DesktopUpdateService()
-    val media = DesktopMediaController(settings)
+    val media = DesktopMediaController(settings, storeFile = mediaStoreFile)
     val cookieImporter = ChromiumCookieImporter()
     private val downloadJobs = ActiveDownloadJobs<String>()
     private val taskContexts = ConcurrentHashMap<String, Pair<ResolvedShare, ShareFile>>()
@@ -145,6 +156,17 @@ class DesktopAppController(
         favorites += saved.favorites
         diagnostics += defaultDiagnostics()
         media.onActivityChanged = ::updatePowerGuard
+        scope.launch {
+            while(isActive) {
+                delay(5000)
+                if(settings.wifiOnly && !WindowsWifiConnection.isConnected()) withContext(Dispatchers.Swing) {
+                    downloads.filter { it.state in setOf(TaskState.DOWNLOADING, TaskState.PREPARING, TaskState.WAITING) }.forEach {
+                        pauseDownload(it); it.error = "等待 Wi-Fi，连接后点击继续"
+                    }
+                    media.pauseForWifi()
+                }
+            }
+        }
         persist()
     }
 
@@ -205,8 +227,78 @@ class DesktopAppController(
         downloads.add(0, task); page = AppPage.DOWNLOADS; persist(); schedule()
     }
 
+    fun downloadShareSelection(selection: List<ShareFile>) {
+        val current = resolved ?: return
+        if(isResolving) return
+        val source = linkText
+        isResolving = true; resolveError = null
+        scope.launch {
+            try {
+                val pending = java.util.ArrayDeque(selection)
+                val files = mutableListOf<ShareFile>()
+                val seen = mutableSetOf<String>()
+                while(pending.isNotEmpty()) {
+                    val file = pending.removeFirst()
+                    if(!seen.add(file.fid)) continue
+                    require(seen.size <= 10000) { "单次最多展开 10000 项，请分批选择" }
+                    if(file.isdir) pending.addAll(resolver.listDirectory(current, file.fid))
+                    else files += file
+                }
+                withContext(Dispatchers.Swing) {
+                    files.forEach { file ->
+                        val task = DesktopDownloadTask(file.fname,sourceLink = source,platform = current.platform.name,
+                            fileId = file.fid,fileSize = file.fsize,parentId = file.pdirFid,fidToken = file.fidToken,modifyTime = file.modifyTime)
+                        taskContexts[task.id] = current to file; downloads.add(0,task)
+                    }
+                    persist(); schedule(); page = AppPage.DOWNLOADS
+                }
+            } catch(e: CancellationException) { throw e }
+            catch(e: Exception) { withContext(Dispatchers.Swing) { resolveError = friendlyError(e) } }
+            finally { withContext(Dispatchers.Swing) { isResolving = false } }
+        }
+    }
+
+    suspend fun copyTaskLink(task: DesktopDownloadTask): Pair<String, suspend () -> Unit> {
+        if(task.sourceLink.startsWith("jiexi-direct:")) return task.sourceLink.removePrefix("jiexi-direct:") to {}
+        val file = ShareFile(task.fileId,task.fileName,task.fileSize,false,task.parentId,task.fidToken,task.modifyTime)
+        if(task.sourceLink == "jiexi-cloud:" + task.platform) return cloud.download(SharePlatform.valueOf(task.platform),file).downloadUrl to {}
+        val current = taskContexts[task.id]?.first ?: resolver.resolve(task.sourceLink,null)
+        val link = resolver.getDownloadLink(current,file)
+        return link.downloadUrl to { resolver.cleanup(current,link) }
+    }
+
+    val cloud = DesktopCloudService(credentialStore)
+    var appearanceRevision by mutableStateOf(0)
+        private set
+    fun applyAppearance(mode: String, accent: String, scale: Float) {
+        settings.themeMode = mode; settings.accentHex = accent; settings.fontScale = scale
+        appearanceRevision++
+    }
+
+    fun downloadCloud(platform: SharePlatform, files: List<ShareFile>) {
+        files.filterNot { it.isdir }.forEach { file ->
+            downloads.add(0, DesktopDownloadTask(file.fname, sourceLink = "jiexi-cloud:" + platform.name,
+                platform = platform.name, fileId = file.fid, fileSize = file.fsize,
+                parentId = file.pdirFid, fidToken = file.fidToken, modifyTime = file.modifyTime))
+        }
+        page = AppPage.DOWNLOADS; persist(); schedule()
+    }
+
+    fun addDirectDownload(url: String, name: String) {
+        val uri = URI(url.trim())
+        require(uri.scheme in setOf("http","https") && !uri.host.isNullOrBlank() && uri.userInfo == null) { "请输入有效 HTTP/HTTPS 文件直链" }
+        val filename = name.trim().ifBlank { uri.path.substringAfterLast('/').ifBlank { "download.bin" } }
+        downloads.add(0, DesktopDownloadTask(filename,sourceLink = "jiexi-direct:" + uri.toASCIIString()))
+        page = AppPage.DOWNLOADS; persist(); schedule()
+    }
+
     @Synchronized
     private fun schedule() {
+        if(settings.wifiOnly && !WindowsWifiConnection.isConnected()) {
+            downloads.filter { it.state == TaskState.WAITING }.forEach { it.state = TaskState.PAUSED; it.error = "等待 Wi-Fi，连接后点击继续" }
+            persist()
+            return
+        }
         val capacity = settings.maxConcurrentTasks - downloadJobs.size
         if (capacity <= 0) return
         downloads.filter { it.state == TaskState.WAITING }
@@ -224,11 +316,29 @@ class DesktopAppController(
             var direct: com.yunx.app.data.network.model.DownloadLink? = null
             try {
                 val pair = taskContexts[task.id]
-                context = pair?.first ?: resolver.resolve(task.sourceLink, password.takeIf { publicLink(task.sourceLink) == publicLink(linkText) && it.isNotBlank() })
                 val file = pair?.second ?: ShareFile(task.fileId, task.fileName, task.fileSize, false, task.parentId, task.fidToken, task.modifyTime)
-                direct = resolver.getDownloadLink(context, file)
+                val personal = task.sourceLink == "jiexi-cloud:" + task.platform
+                val platform: SharePlatform
+                val credential: String
+                val genericDirect = task.sourceLink.startsWith("jiexi-direct:")
+                if (genericDirect) {
+                    platform = SharePlatform.C139
+                    credential = ""
+                    val uri = URI(task.sourceLink.removePrefix("jiexi-direct:"))
+                    require(uri.scheme in setOf("http","https") && !uri.host.isNullOrBlank())
+                    direct = com.yunx.app.data.network.model.DownloadLink(task.id,task.fileName,uri.toASCIIString(),task.fileSize)
+                } else if (personal) {
+                    platform = SharePlatform.valueOf(task.platform)
+                    credential = cloud.credential(platform)
+                    direct = cloud.download(platform, file)
+                } else {
+                    context = pair?.first ?: resolver.resolve(task.sourceLink, password.takeIf { publicLink(task.sourceLink) == publicLink(linkText) && it.isNotBlank() })
+                    platform = context.platform
+                    credential = context.credential
+                    direct = resolver.getDownloadLink(context, file)
+                }
                 withContext(Dispatchers.Swing) { task.state = TaskState.DOWNLOADING; task.error = null; task.errorCode = ""; persist() }
-                val output = downloader.download(direct, resolver.downloadHeaders(context.platform, context.credential), File(downloadDirectory), threadCount,
+                val output = downloader.download(direct, if(genericDirect) emptyMap() else resolver.downloadHeaders(platform, credential), File(downloadDirectory), threadCount,
                     task.downloadKey, settings.speedLimitBytes) { progress ->
                     javax.swing.SwingUtilities.invokeLater { task.progress = progress; task.updatedAt = System.currentTimeMillis(); persistThrottled() }
                 }
@@ -250,7 +360,7 @@ class DesktopAppController(
                 val failure = DesktopFailureClassifier.classify(error)
                 withContext(Dispatchers.Swing) {
                     task.error = friendlyError(error); task.errorCode = failure.first
-                    if (failure.second && task.retryCount < 3) {
+                    if (failure.second && task.retryCount < settings.retryLimit) {
                         task.retryCount += 1
                         task.state = TaskState.RETRY_WAIT
                     } else {
@@ -299,6 +409,14 @@ class DesktopAppController(
     }
     fun resumeDownload(task: DesktopDownloadTask) { if (task.state != TaskState.COMPLETED) { task.state = TaskState.WAITING; task.error = null; task.retryCount = 0; persist(); schedule() } }
     fun retryDownload(task: DesktopDownloadTask) = resumeDownload(task)
+    fun downloadAgain(task: DesktopDownloadTask) {
+        val copy = DesktopDownloadTask(task.fileName, sourceLink = task.sourceLink, platform = task.platform,
+            fileId = task.fileId, fileSize = task.fileSize, parentId = task.parentId,
+            fidToken = task.fidToken, modifyTime = task.modifyTime)
+        taskContexts[task.id]?.let { taskContexts[copy.id] = it }
+        downloads.add(0, copy)
+        persist(); schedule()
+    }
     fun pauseAll() {
         downloads.filter { it.state in setOf(TaskState.WAITING, TaskState.PREPARING, TaskState.DOWNLOADING, TaskState.RETRY_WAIT) }.forEach(::pauseDownload)
         media.pauseAll()
@@ -334,6 +452,20 @@ class DesktopAppController(
         }
     }
     fun removeFavorite(item: DesktopFavorite) { favorites.remove(item); persist() }
+    fun saveFavorite(link: String, title: String, category: String) {
+        val url = UnifiedLinkClassifier.classifyText(link).firstOrNull()?.normalizedUrl ?: error("请输入有效链接")
+        val safe = publicLink(url)
+        val existing = favorites.indexOfFirst { it.link == safe }
+        val value = DesktopFavorite(if(existing >= 0) favorites[existing].id else UUID.randomUUID().toString(),
+            safe, title.ifBlank { safe }, UnifiedLinkClassifier.classifyText(link).first().platform.name,
+            if(existing >= 0) favorites[existing].createdAt else System.currentTimeMillis(), category.ifBlank { "未分类" })
+        if(existing >= 0) favorites[existing] = value else favorites.add(0,value)
+        persist()
+    }
+    fun setFavoriteCategory(item: DesktopFavorite, category: String) {
+        val index = favorites.indexOfFirst { it.id == item.id }
+        if(index >= 0) { favorites[index] = item.copy(category = category.ifBlank { "未分类" }); persist() }
+    }
     fun clearHistory() { history.clear(); persist() }
     fun resolveSaved(link: String) { linkText = link; password = ""; page = AppPage.RESOLVE; resolve() }
 
@@ -433,7 +565,7 @@ class DesktopAppController(
         threadCount = settings.threadCount
         schedule()
     }
-    fun setReduceMotion(enabled: Boolean) { settings.reduceMotion = enabled }
+    fun setReduceMotion(enabled: Boolean) { settings.reduceMotion = enabled; appearanceRevision++ }
     fun saveDesktopIntegration(closeToTray: Boolean, notifications: Boolean, preventSleep: Boolean) {
         settings.closeToTray = closeToTray
         settings.notifyOnCompletion = notifications
@@ -472,7 +604,7 @@ class DesktopAppController(
     )
     private fun account(key: CredentialKey) = if (credentialStore.has(key)) "待验证" else "未配置"
 
-    companion object { const val APP_VERSION = "4.0.0" }
+    companion object { const val APP_VERSION = "4.1.0" }
 }
 
 private object DesktopFailureClassifier {

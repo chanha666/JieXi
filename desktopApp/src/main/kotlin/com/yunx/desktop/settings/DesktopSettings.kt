@@ -85,6 +85,28 @@ class DesktopSettings(
         get() = preferences.getBoolean("reduce_motion", false)
         set(value) { preferences.putBoolean("reduce_motion", value); preferences.flush() }
 
+    var themeMode: String
+        get() = preferences.get("theme_mode", "light")
+        set(value) { require(value in setOf("light","dark","system")); preferences.put("theme_mode", value); preferences.flush() }
+    var accentHex: String
+        get() = preferences.get("accent_hex", "B65326")
+        set(value) { require(value.matches(Regex("[0-9A-Fa-f]{6}"))); preferences.put("accent_hex", value); preferences.flush() }
+    var fontScale: Float
+        get() = preferences.getFloat("font_scale", 1f).coerceIn(0.9f, 1.3f)
+        set(value) { preferences.putFloat("font_scale", value.coerceIn(0.9f, 1.3f)); preferences.flush() }
+    var retryLimit: Int
+        get() = preferences.getInt("retry_limit", 3).coerceIn(0, 10)
+        set(value) { preferences.putInt("retry_limit", value.coerceIn(0,10)); preferences.flush() }
+    var wifiOnly: Boolean
+        get() = preferences.getBoolean("wifi_only", false)
+        set(value) { preferences.putBoolean("wifi_only", value); preferences.flush() }
+    var mediaQuality: String
+        get() = preferences.get("media_quality", "best")
+        set(value) { require(value in setOf("best","1080","720","audio")); preferences.put("media_quality", value); preferences.flush() }
+    var mediaNameRule: String
+        get() = preferences.get("media_name", "title-id")
+        set(value) { require(value in setOf("title-id","title","uploader-title")); preferences.put("media_name", value); preferences.flush() }
+
     var closeToTray: Boolean
         get() = preferences.getBoolean("close_to_tray", true)
         set(value) { preferences.putBoolean("close_to_tray", value); preferences.flush() }

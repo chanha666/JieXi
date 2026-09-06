@@ -9,6 +9,8 @@ import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
@@ -35,6 +37,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.InsertDriveFile
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Article
 import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Cloud
@@ -95,6 +99,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Typography
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -156,17 +163,17 @@ import org.jetbrains.skia.Image as SkiaImage
 import kotlin.math.ln
 import kotlin.math.pow
 
-private val Ink = Color(0xFF29231E)
-private val Muted = Color(0xFF746B63)
-private val Canvas = Color(0xFFFFFAF3)
-private val Sidebar = Color(0xFFFFF1DE)
-private val WarmCard = Color(0xFFFFFEFB)
-private val Line = Color(0xFFE9DED1)
-private val Accent = Color(0xFFD76524)
-private val AccentStrong = Color(0xFFA94713)
-private val AccentSoft = Color(0xFFFFE8D5)
-private val Orange = Color(0xFFE8782D)
-private val OrangeSoft = Color(0xFFFFEBDC)
+private val Ink: Color @Composable get() = MaterialTheme.colorScheme.onBackground
+private val Muted: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+private val Canvas: Color @Composable get() = MaterialTheme.colorScheme.background
+private val Sidebar: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
+private val WarmCard: Color @Composable get() = MaterialTheme.colorScheme.surface
+private val Line: Color @Composable get() = MaterialTheme.colorScheme.outlineVariant
+private val Accent: Color @Composable get() = MaterialTheme.colorScheme.primary
+private val AccentStrong: Color @Composable get() = MaterialTheme.colorScheme.primary
+private val AccentSoft: Color @Composable get() = MaterialTheme.colorScheme.primaryContainer
+private val Orange: Color @Composable get() = MaterialTheme.colorScheme.primary
+private val OrangeSoft: Color @Composable get() = MaterialTheme.colorScheme.primaryContainer
 private val Success = Color(0xFF128665)
 private val SuccessSoft = Color(0xFFE1F6EE)
 private val Warning = Color(0xFFB76A13)
@@ -180,34 +187,27 @@ private const val APP_ICON_BRAND_RESOURCE = "icon_brand.png"
 private val Purple = Color(0xFF6B62D9)
 private val Error = Color(0xFFB3261E)
 
+private val DesktopFontFamily: FontFamily by lazy {
+    val fonts = File(System.getenv("WINDIR") ?: "C:/Windows", "Fonts")
+    val regular = File(fonts, "msyh.ttc")
+    val bold = File(fonts, "msyhbd.ttc")
+    if(regular.isFile && bold.isFile) FontFamily(
+        androidx.compose.ui.text.platform.Font(regular, FontWeight.Normal),
+        androidx.compose.ui.text.platform.Font(bold, FontWeight.Bold)
+    ) else FontFamily.SansSerif
+}
 private val DesktopTypography = Typography(
-    headlineLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 30.sp),
-    headlineMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 24.sp),
-    titleLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 20.sp),
-    titleMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Medium, fontSize = 16.sp),
-    bodyLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 15.sp),
-    bodyMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 13.sp),
-    bodySmall = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 12.sp),
-    labelLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Medium, fontSize = 13.sp),
-    labelMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Medium, fontSize = 12.sp),
-    labelSmall = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Medium, fontSize = 11.sp)
+    headlineLarge = TextStyle(fontFamily = DesktopFontFamily, fontWeight = FontWeight.SemiBold, fontSize = 30.sp),
+    headlineMedium = TextStyle(fontFamily = DesktopFontFamily, fontWeight = FontWeight.SemiBold, fontSize = 24.sp),
+    titleLarge = TextStyle(fontFamily = DesktopFontFamily, fontWeight = FontWeight.SemiBold, fontSize = 20.sp),
+    titleMedium = TextStyle(fontFamily = DesktopFontFamily, fontWeight = FontWeight.Medium, fontSize = 16.sp),
+    bodyLarge = TextStyle(fontFamily = DesktopFontFamily, fontSize = 16.sp, lineHeight = 24.sp, letterSpacing = 0.sp),
+    bodyMedium = TextStyle(fontFamily = DesktopFontFamily, fontSize = 14.sp, lineHeight = 22.sp, letterSpacing = 0.sp),
+    bodySmall = TextStyle(fontFamily = DesktopFontFamily, fontSize = 12.sp),
+    labelLarge = TextStyle(fontFamily = DesktopFontFamily, fontWeight = FontWeight.Medium, fontSize = 13.sp),
+    labelMedium = TextStyle(fontFamily = DesktopFontFamily, fontWeight = FontWeight.Medium, fontSize = 12.sp),
+    labelSmall = TextStyle(fontFamily = DesktopFontFamily, fontWeight = FontWeight.Medium, fontSize = 12.sp)
 )
-
-private val YunXColors: ColorScheme
-    @Composable get() = androidx.compose.material3.lightColorScheme(
-        primary = Accent,
-        onPrimary = Color.White,
-        primaryContainer = AccentSoft,
-        onPrimaryContainer = Color(0xFF0B3B34),
-        background = Canvas,
-        onBackground = Ink,
-        surface = WarmCard,
-        onSurface = Ink,
-        surfaceVariant = Color(0xFFF6EFE6),
-        onSurfaceVariant = Muted,
-        outline = Line,
-        error = Error
-    )
 
 fun main() {
     val instance = SingleInstanceGuard.acquire()
@@ -252,10 +252,15 @@ fun main() {
                 icon = icon,
                 state = state
             ) {
-                MaterialTheme(colorScheme = YunXColors, typography = DesktopTypography) {
+                window.minimumSize = java.awt.Dimension(780, 560)
+                val appearanceRevision = controller.appearanceRevision
+                val scheme = desktopColorScheme(controller.settings.themeMode, controller.settings.accentHex, appearanceRevision)
+                CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, controller.settings.fontScale)) {
+                MaterialTheme(colorScheme = scheme, typography = DesktopTypography) {
                     Surface(Modifier.fillMaxSize(), color = Canvas) {
                         YunXDesktopApp(controller)
                     }
+                }
                 }
             }
         }
@@ -287,35 +292,41 @@ private fun loadResourcePainter(resourceNames: List<String>): BitmapPainter {
 
 @Composable
 private fun YunXDesktopApp(controller: DesktopAppController) {
-    Box(
-        Modifier.fillMaxSize().background(
-            Brush.radialGradient(
-                colors = listOf(Color(0xFFFFFDF8), Color(0xFFFFF3E3), Canvas),
-                radius = 920f
-            )
-        ).padding(10.dp)
-    ) {
-        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Box(Modifier.fillMaxSize().background(Canvas).padding(12.dp)) {
+        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SidebarNavigation(controller.page) { controller.page = it }
-            AnimatedContent(
-                targetState = controller.page,
-                transitionSpec = {
-                    val duration = if (controller.settings.reduceMotion) 0 else 160
-                    fadeIn(tween(duration)) togetherWith fadeOut(tween(duration))
-                },
-                modifier = Modifier.weight(1f).clip(RoundedCornerShape(22.dp)).background(WarmCard),
-                label = "page"
-            ) { page ->
-                when (page) {
-                    AppPage.RESOLVE -> ResolvePage(controller)
-                    AppPage.MEDIA -> MediaPage(controller)
-                    AppPage.DOWNLOADS -> DownloadsPage(controller)
-                    AppPage.TOOLS -> MediaToolsPage(controller)
-                    AppPage.LIBRARY -> LibraryPage(controller)
-                    AppPage.STATUS -> StatusPage(controller)
-                    AppPage.ACCOUNTS -> AccountsPage(controller)
-                    AppPage.SPONSOR -> SponsorPage()
-                    AppPage.SETTINGS -> SettingsPage(controller)
+            Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(20.dp)).background(WarmCard)) {
+                if (controller.page !in AppPage.primary) {
+                    TextButton(onClick = { controller.page = controller.page.primaryPage }, modifier = Modifier.padding(start = 20.dp, top = 10.dp)) {
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (controller.page.primaryPage == AppPage.RESOLVE) "返回解析" else "返回我的")
+                    }
+                }
+                AnimatedContent(
+                    targetState = controller.page,
+                    transitionSpec = {
+                        val duration = if (controller.settings.reduceMotion) 0 else 160
+                        fadeIn(tween(duration)) togetherWith fadeOut(tween(duration))
+                    },
+                    modifier = Modifier.weight(1f),
+                    label = "page"
+                ) { page ->
+                    when (page) {
+                        AppPage.RESOLVE -> ResolvePage(controller)
+                        AppPage.MEDIA -> MediaPage(controller)
+                        AppPage.DOWNLOADS -> DownloadsPage(controller)
+                        AppPage.MINE -> MinePage(controller)
+                        AppPage.TOOLS -> MediaToolsPage(controller)
+                        AppPage.LIBRARY -> LibraryWorkspace(controller)
+                        AppPage.STATUS -> StatusPage(controller)
+                        AppPage.ACCOUNTS -> AccountsPage(controller)
+                        AppPage.CLOUD -> CloudWorkspace(controller)
+                        AppPage.APPEARANCE -> DesktopPreferencesPage(controller, appearance = true)
+                        AppPage.BACKUP -> CredentialBackupPage(controller)
+                        AppPage.SPONSOR -> SponsorPage()
+                        AppPage.SETTINGS -> SettingsPage(controller)
+                    }
                 }
             }
         }
@@ -327,55 +338,61 @@ private fun YunXDesktopApp(controller: DesktopAppController) {
 private fun SidebarNavigation(selected: AppPage, onSelect: (AppPage) -> Unit) {
     val brandMark = remember { loadDesktopIcon() }
     Column(
-        Modifier.width(224.dp).fillMaxHeight().clip(RoundedCornerShape(22.dp)).background(
-            Brush.verticalGradient(listOf(Color(0xFFF0F7FB), Sidebar))
-        ).padding(18.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+        Modifier.width(184.dp).fillMaxHeight().clip(RoundedCornerShape(20.dp))
+            .background(Sidebar).verticalScroll(rememberScrollState()).padding(14.dp)
     ) {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier.size(38.dp).clip(RoundedCornerShape(13.dp)).background(WarmCard),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = brandMark,
-                        contentDescription = "解析图标",
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier.size(27.dp)
-                    )
-                }
-                Spacer(Modifier.width(11.dp))
-                Column {
-                    Text("解析", fontSize = 20.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.4).sp)
-                    Text("高速资源工作台", fontSize = 11.sp, color = Muted)
-                }
+        Row(Modifier.padding(vertical = 14.dp, horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Image(brandMark, "解析图标", modifier = Modifier.size(36.dp))
+            Spacer(Modifier.width(10.dp))
+            Column {
+                Text("解析", fontSize = 21.sp, fontWeight = FontWeight.SemiBold)
+                Text("链接到文件", fontSize = 12.sp, color = Muted)
             }
-            Spacer(Modifier.height(28.dp))
-            NavigationItem("解析", Icons.Outlined.Link, selected == AppPage.RESOLVE) { onSelect(AppPage.RESOLVE) }
-            NavigationItem("视频下载", Icons.Outlined.OndemandVideo, selected == AppPage.MEDIA) { onSelect(AppPage.MEDIA) }
-            NavigationItem("下载", Icons.Outlined.Download, selected == AppPage.DOWNLOADS) { onSelect(AppPage.DOWNLOADS) }
-            NavigationItem("媒体工具", Icons.Outlined.Build, selected == AppPage.TOOLS) { onSelect(AppPage.TOOLS) }
-            NavigationItem("历史收藏", Icons.Outlined.Save, selected == AppPage.LIBRARY) { onSelect(AppPage.LIBRARY) }
-            NavigationItem("平台状态", Icons.Outlined.Hub, selected == AppPage.STATUS) { onSelect(AppPage.STATUS) }
-            NavigationItem("云盘登录", Icons.Outlined.Cloud, selected == AppPage.ACCOUNTS) { onSelect(AppPage.ACCOUNTS) }
         }
-        Column {
-            Surface(color = SuccessSoft, shape = RoundedCornerShape(12.dp)) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 9.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(Modifier.size(7.dp).clip(RoundedCornerShape(4.dp)).background(Success))
-                    Spacer(Modifier.width(8.dp))
-                    Text("解析引擎就绪", color = Success, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            NavigationItem("赞赏支持", Icons.Outlined.FavoriteBorder, selected == AppPage.SPONSOR) { onSelect(AppPage.SPONSOR) }
-            NavigationItem("设置", Icons.Outlined.Settings, selected == AppPage.SETTINGS) { onSelect(AppPage.SETTINGS) }
+        Spacer(Modifier.height(26.dp))
+        NavigationItem("解析", Icons.Outlined.Link, selected.primaryPage == AppPage.RESOLVE) { onSelect(AppPage.RESOLVE) }
+        NavigationItem("下载", Icons.Outlined.Download, selected.primaryPage == AppPage.DOWNLOADS) { onSelect(AppPage.DOWNLOADS) }
+        NavigationItem("我的", Icons.Outlined.PersonOutline, selected.primaryPage == AppPage.MINE) { onSelect(AppPage.MINE) }
+        Spacer(Modifier.height(32.dp))
+        Text("4.1 · Windows", fontSize = 12.sp, color = Muted, modifier = Modifier.padding(13.dp))
+    }
+}
+
+@Composable
+private fun MinePage(controller: DesktopAppController) {
+    PageFrame("我的", "账号、工具与偏好，各归其位") {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            Text("我的内容", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(vertical = 12.dp))
+            MineEntry("历史与收藏", "重新解析、收藏管理与历史记录", Icons.Outlined.Save) { controller.page = AppPage.LIBRARY }
+            MineEntry("网盘与账号", "软件内登录、浏览器导入与凭据管理", Icons.Outlined.Cloud) { controller.page = AppPage.ACCOUNTS }
+            MineEntry("我的网盘文件", "空间、目录、下载、移动、重命名与分享", Icons.Outlined.Folder) { controller.page = AppPage.CLOUD }
+            Text("工具与偏好", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 28.dp, bottom = 12.dp))
+            MineEntry("媒体工具", "图片局部修复、音频提取、视频截图与媒体信息", Icons.Outlined.Build) { controller.page = AppPage.TOOLS }
+            MineEntry("视频下载选项", "批量视频、画质、字幕与音频", Icons.Outlined.OndemandVideo) { controller.page = AppPage.MEDIA }
+            MineEntry("平台与诊断", "账号状态、网络诊断与脱敏日志", Icons.Outlined.Hub) { controller.page = AppPage.STATUS }
+            MineEntry("外观", "浅色、深色、系统主题与字体大小", Icons.Outlined.Palette) { controller.page = AppPage.APPEARANCE }
+            MineEntry("认证备份", "加密导入导出，手机与电脑互通", Icons.Outlined.Shield) { controller.page = AppPage.BACKUP }
+            MineEntry("设置与更新", "下载路径、速度预设、减少动画、在线更新与反馈", Icons.Outlined.Settings) { controller.page = AppPage.SETTINGS }
+            Text("关于", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 28.dp, bottom = 12.dp))
+            MineEntry("赞赏作者", "如果解析帮到了你，欢迎支持后续维护", Icons.Outlined.FavoriteBorder) { controller.page = AppPage.SPONSOR }
         }
     }
+}
+
+@Composable
+private fun MineEntry(title: String, description: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(vertical = 17.dp, horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, tint = Accent, modifier = Modifier.size(23.dp))
+        Spacer(Modifier.width(18.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            Spacer(Modifier.height(4.dp))
+            Text(description, color = Muted, fontSize = 13.sp)
+        }
+        Icon(Icons.AutoMirrored.Outlined.OpenInNew, null, tint = Muted, modifier = Modifier.size(17.dp))
+    }
+    HorizontalDivider(color = Line.copy(alpha = 0.5f))
 }
 
 @Composable
@@ -402,7 +419,7 @@ private fun PageFrame(
     Column(Modifier.fillMaxSize().padding(horizontal = 34.dp, vertical = 28.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(title, fontSize = 28.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.5).sp)
+                Text(title, fontSize = 26.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp)
                 Spacer(Modifier.height(5.dp))
                 Text(subtitle, fontSize = 13.sp, color = Muted)
             }
@@ -416,8 +433,8 @@ private fun PageFrame(
 @Composable
 private fun ResolvePage(controller: DesktopAppController) {
     PageFrame(
-        "解析工作台",
-        "粘贴分享链接，自动识别网盘并获取可下载文件",
+        "解析",
+        "粘贴链接，获取你需要的文件",
         action = {
             TextButton(
                 onClick = { controller.page = AppPage.SPONSOR },
@@ -441,137 +458,61 @@ private fun ResolvePage(controller: DesktopAppController) {
 
 @Composable
 private fun ResolveInput(controller: DesktopAppController) {
-    Column(Modifier.fillMaxWidth()) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBFD7E8)),
-            shape = RoundedCornerShape(24.dp)
-        ) {
-            Column(
-                Modifier.background(
-                    Brush.linearGradient(
-                        listOf(Color(0xFFF7FCFF), Color(0xFFECF6FF), Color(0xFFFFF8F1))
-                    )
-                ).padding(24.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier.size(46.dp).clip(RoundedCornerShape(15.dp)).background(
-                            Brush.linearGradient(listOf(Accent, Color(0xFF41A7F5)))
-                        ),
-                        contentAlignment = Alignment.Center
-                    ) { Icon(Icons.Outlined.Link, null, tint = Color.White, modifier = Modifier.size(23.dp)) }
-                    Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("粘贴链接，剩下的交给解析", fontSize = 19.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp)
-                        Text("自动识别平台、提取码与文件目录，公开资源优先免登录", color = Muted, fontSize = 12.sp)
-                    }
-                    Surface(color = SuccessSoft, shape = RoundedCornerShape(20.dp)) {
-                        Row(Modifier.padding(horizontal = 11.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Outlined.Verified, null, tint = Success, modifier = Modifier.size(15.dp))
-                            Spacer(Modifier.width(5.dp))
-                            Text("安全连接", color = Success, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                        }
-                    }
-                }
-                Spacer(Modifier.height(18.dp))
-                OutlinedTextField(
-                    value = controller.linkText,
-                    onValueChange = { controller.linkText = it },
-                    modifier = Modifier.fillMaxWidth().height(104.dp),
-                    placeholder = { Text("粘贴夸克、UC、迅雷、百度、139 或 123 云盘分享链接") },
-                    enabled = !controller.isResolving,
-                    shape = RoundedCornerShape(16.dp)
-                )
-                Spacer(Modifier.height(13.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
-                        value = controller.password,
-                        onValueChange = { controller.password = it },
-                        modifier = Modifier.width(250.dp),
-                        placeholder = { Text("提取码（可选）") },
-                        enabled = !controller.isResolving,
-                        singleLine = true,
-                        shape = RoundedCornerShape(13.dp)
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Surface(color = Color.White.copy(alpha = 0.72f), shape = RoundedCornerShape(12.dp)) {
-                        Text("支持 Ctrl+V 快速粘贴", color = Muted, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp))
-                    }
-                    Spacer(Modifier.weight(1f))
-                    OutlinedButton(
-                        onClick = { readClipboardText()?.let { controller.linkText = it } },
-                        enabled = !controller.isResolving,
-                        modifier = Modifier.height(48.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Outlined.ContentPaste, null, modifier = Modifier.size(17.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("粘贴")
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Button(
-                        onClick = controller::resolve,
-                        enabled = controller.linkText.isNotBlank() && !controller.isResolving,
-                        modifier = Modifier.height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Orange, contentColor = Color.White)
-                    ) {
-                        if (controller.isResolving) {
-                            CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                            Spacer(Modifier.width(9.dp))
-                        }
-                        Text(if (controller.isResolving) "正在解析" else "开始解析")
-                    }
-                }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        OutlinedTextField(
+            value = controller.linkText,
+            onValueChange = { controller.linkText = it },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp),
+            placeholder = { Text("粘贴网盘、公开视频链接或分享文字") },
+            enabled = !controller.isResolving,
+            shape = RoundedCornerShape(16.dp)
+        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(
+                value = controller.password, onValueChange = { controller.password = it },
+                modifier = Modifier.weight(1f), placeholder = { Text("网盘提取码（可选）") },
+                enabled = !controller.isResolving, singleLine = true, shape = RoundedCornerShape(12.dp)
+            )
+            OutlinedButton(onClick = { readClipboardText()?.let { controller.linkText = it } }, enabled = !controller.isResolving, modifier = Modifier.height(50.dp)) {
+                Icon(Icons.Outlined.ContentPaste, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp)); Text("粘贴")
             }
+            TextButton(onClick = { controller.linkText = ""; controller.password = "" }, enabled = !controller.isResolving) { Text("清空") }
+        }
+        Button(
+            onClick = controller::resolve, enabled = controller.linkText.isNotBlank() && !controller.isResolving,
+            modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)
+        ) {
+            if (controller.isResolving) {
+                CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                Spacer(Modifier.width(10.dp))
+            }
+            Text(if (controller.isResolving) "正在解析…" else "开始解析", fontSize = 16.sp)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("部分网盘需要登录账号后才能下载。", color = Muted, fontSize = 13.sp, modifier = Modifier.weight(1f))
+            TextButton(onClick = { controller.page = AppPage.ACCOUNTS }) { Text("管理账号") }
         }
         controller.resolveError?.let {
-            Spacer(Modifier.height(12.dp))
-            Surface(color = Color(0xFFFFECEA), shape = RoundedCornerShape(11.dp)) {
-                Text(it, color = Error, fontSize = 13.sp, modifier = Modifier.fillMaxWidth().padding(12.dp))
+            Surface(color = Color(0xFFFFECEA), shape = RoundedCornerShape(12.dp)) {
+                Text(it, color = Error, fontSize = 14.sp, modifier = Modifier.fillMaxWidth().padding(14.dp))
             }
         }
-        Spacer(Modifier.height(16.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Card(
-                modifier = Modifier.weight(1.45f),
-                colors = CardDefaults.cardColors(containerColor = WarmCard),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Line),
-                shape = RoundedCornerShape(18.dp)
-            ) {
-                Column(Modifier.padding(17.dp)) {
-                    Text("平台能力", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                    Text("链接会自动路由到对应解析器", color = Muted, fontSize = 10.sp)
-                    Spacer(Modifier.height(12.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        PlatformChip("夸克", "匿名", Warning, WarningSoft)
-                        PlatformChip("UC", "匿名", Warning, WarningSoft)
-                        PlatformChip("迅雷", "授权", Purple, Color(0xFFECEAFF))
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        PlatformChip("百度", "匿名", Warning, WarningSoft)
-                        PlatformChip("139", "免登", Success, SuccessSoft)
-                        PlatformChip("123", "匿名", Warning, WarningSoft)
-                    }
-                }
-            }
-            Card(
-                modifier = Modifier.weight(1f),
-                colors = CardDefaults.cardColors(containerColor = WarmCard),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Line),
-                shape = RoundedCornerShape(18.dp)
-            ) {
-                Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("实时状态", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                    StatusLine(Icons.Outlined.Hub, "解析通道", "就绪", Accent)
-                    StatusLine(Icons.Outlined.Memory, "并发引擎", "最高 64 路", Purple)
-                    StatusLine(Icons.Outlined.Storage, "保存位置", File(controller.downloadDirectory).name.ifBlank { "已设置" }, Success)
-                }
+        HorizontalDivider(color = Line)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("最近下载", fontSize = 16.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+            TextButton(onClick = { controller.page = AppPage.DOWNLOADS }) { Text("查看全部") }
+        }
+        val recent = (controller.downloads.take(3).map { it.fileName to taskStateName(it.state) } +
+            controller.media.tasks.take(3).map { it.title to mediaTaskStateName(it.state) }).take(3)
+        if (recent.isEmpty()) Text("还没有任务。从上面粘贴第一个链接开始。", color = Muted, fontSize = 14.sp)
+        recent.forEach { (title, state) ->
+            Row(Modifier.fillMaxWidth().clickable { controller.page = AppPage.DOWNLOADS }.padding(vertical = 10.dp)) {
+                Text(title, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 14.sp)
+                Spacer(Modifier.width(12.dp)); Text(state, color = Muted, fontSize = 13.sp)
             }
         }
+        Text("保存到 " + controller.downloadDirectory, color = Muted, fontSize = 12.sp)
     }
 }
 
@@ -587,8 +528,8 @@ private fun StatusLine(
             Icon(icon, null, tint = tint, modifier = Modifier.size(16.dp))
         }
         Spacer(Modifier.width(9.dp))
-        Text(label, color = Muted, fontSize = 11.sp, modifier = Modifier.weight(1f))
-        Text(value, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+        Text(label, color = Muted, fontSize = 12.sp, modifier = Modifier.weight(1f))
+        Text(value, fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -614,7 +555,7 @@ private fun FeatureCard(
             Spacer(Modifier.width(11.dp))
             Column {
                 Text(title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                Text(detail, fontSize = 11.sp, color = Muted, maxLines = 1)
+                Text(detail, fontSize = 12.sp, color = Muted, maxLines = 1)
             }
         }
     }
@@ -636,6 +577,24 @@ private fun PlatformChip(text: String, status: String, tint: Color, container: C
 @Composable
 private fun ResolvedFiles(controller: DesktopAppController) {
     val result = controller.resolved ?: return
+    var selected by remember(controller.path) { mutableStateOf(emptySet<String>()) }
+    var destination by remember { mutableStateOf(false) }
+    var transferring by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    val picked = controller.currentFiles.filter { it.fid in selected }
+    if(destination) CloudFolderDialog(result.platform, controller.cloud, { destination = false }) { directory ->
+        transferring = true
+        scope.launch {
+            try {
+                val credential = controller.cloud.credential(result.platform)
+                picked.forEach { result.repository.transferFile(result.session,it,directory,credential).getOrThrow() }
+                message = "已转存 ${picked.size} 项"
+            } catch(e: kotlinx.coroutines.CancellationException) { throw e }
+            catch(e: Exception) { message = e.message ?: "转存失败" }
+            finally { transferring = false }
+        }
+    }
     Column(Modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { controller.goToPath(-1) }) { Text(result.session.title.ifBlank { "分享根目录" }) }
@@ -651,6 +610,16 @@ private fun ResolvedFiles(controller: DesktopAppController) {
             OutlinedButton(onClick = controller::clearResolution) { Text("解析新链接") }
         }
         controller.resolveError?.let { Text(it, color = Error, fontSize = 13.sp) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(selected.isNotEmpty() && selected.size == controller.currentFiles.size,
+                { selected = if(it) controller.currentFiles.map { f -> f.fid }.toSet() else emptySet() })
+            Text("已选 ${selected.size}",modifier = Modifier.weight(1f))
+            TextButton(onClick = { controller.downloadShareSelection(picked) }, enabled = picked.isNotEmpty() && !transferring && !controller.isResolving) { Text("批量下载") }
+            TextButton(onClick = { destination = true },enabled = picked.isNotEmpty() && !transferring) { Text("转存到网盘") }
+            TextButton(onClick = { controller.addFavoriteCurrent(); message = "已添加收藏" }) { Text("收藏链接") }
+        }
+        if(transferring) LinearProgressIndicator(Modifier.fillMaxWidth())
+        message?.let { Text(it,color = Accent) }
         Spacer(Modifier.height(10.dp))
         Card(
             modifier = Modifier.fillMaxSize(),
@@ -662,7 +631,10 @@ private fun ResolvedFiles(controller: DesktopAppController) {
                 val listState = rememberLazyListState()
                 LazyColumn(state = listState, modifier = Modifier.fillMaxSize().padding(end = 10.dp)) {
                     items(controller.currentFiles, key = { it.fid }) { file ->
-                        FileRow(file, controller::openFolder, controller::download)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(file.fid in selected, { selected = if(it) selected + file.fid else selected - file.fid }, enabled = !transferring)
+                            Box(Modifier.weight(1f)) { FileRow(file, controller::openFolder, controller::download) }
+                        }
                         HorizontalDivider(color = Line)
                     }
                 }
@@ -695,7 +667,7 @@ private fun FileRow(file: ShareFile, onFolder: (ShareFile) -> Unit, onDownload: 
         Spacer(Modifier.width(13.dp))
         Column(Modifier.weight(1f)) {
             Text(file.fname, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 14.sp)
-            if (!file.isdir) Text(formatBytes(file.fsize), color = Muted, fontSize = 11.sp)
+            if (!file.isdir) Text(formatBytes(file.fsize), color = Muted, fontSize = 12.sp)
         }
         if (file.isdir) {
             Text("打开", color = Accent, fontSize = 12.sp)
@@ -715,7 +687,7 @@ private fun MediaPage(controller: DesktopAppController) {
     var formatMenu by remember { mutableStateOf(false) }
     PageFrame(
         "公开视频下载",
-        "粘贴一个或多个链接；自动识别平台、优先无水印公开源并按最高速度排队",
+        "选择画质或批量添加；优先使用原站公开提供的资源",
         action = {
             OutlinedButton(onClick = { controller.page = AppPage.TOOLS }, shape = RoundedCornerShape(12.dp)) {
                 Icon(Icons.Outlined.Build, null, modifier = Modifier.size(17.dp))
@@ -731,7 +703,7 @@ private fun MediaPage(controller: DesktopAppController) {
                 shape = RoundedCornerShape(22.dp)
             ) {
                 Column(
-                    Modifier.background(Brush.linearGradient(listOf(Color(0xFFFFFDF8), Color(0xFFFFF3E6), Color(0xFFF8FBFD))))
+                    Modifier.background(WarmCard)
                         .padding(22.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -741,11 +713,11 @@ private fun MediaPage(controller: DesktopAppController) {
                         ) { Icon(Icons.Outlined.OndemandVideo, null, tint = Accent, modifier = Modifier.size(23.dp)) }
                         Spacer(Modifier.width(13.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("公开资源，一次粘贴就开始", fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
-                            Text("YouTube、哔哩哔哩、抖音、X、TikTok、小红书、微博、视频号与通用网站", color = Muted, fontSize = 11.sp)
+                            Text("视频与音频", fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+                            Text("YouTube、哔哩哔哩、抖音、X、TikTok、小红书、微博、视频号与通用网站", color = Muted, fontSize = 12.sp)
                         }
                         Surface(color = SuccessSoft, shape = RoundedCornerShape(18.dp)) {
-                            Text("匿名模式", color = Success, fontSize = 10.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
+                            Text("匿名模式", color = Success, fontSize = 12.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
                         }
                     }
                     Spacer(Modifier.height(16.dp))
@@ -784,7 +756,7 @@ private fun MediaPage(controller: DesktopAppController) {
                             Text(if (media.analyzing) "正在解析" else "解析第一个链接")
                         }
                         Spacer(Modifier.weight(1f))
-                        Text("公开视频原站提供 4K / 8K 时可直接选择", color = Muted, fontSize = 10.sp)
+                        Text("公开视频原站提供 4K / 8K 时可直接选择", color = Muted, fontSize = 12.sp)
                     }
                 }
             }
@@ -811,19 +783,19 @@ private fun MediaPage(controller: DesktopAppController) {
                             ) { Icon(Icons.Outlined.PlayArrow, null, tint = Orange, modifier = Modifier.size(32.dp)) }
                             Spacer(Modifier.width(14.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(preview.platform, color = Accent, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                                Text(preview.platform, color = Accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                 Text(preview.title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                 Text(
                                     listOf(preview.uploader, formatDurationDesktop(preview.durationSeconds), preview.engine).filter(String::isNotBlank).joinToString(" · "),
                                     color = Muted,
-                                    fontSize = 10.sp
+                                    fontSize = 12.sp
                                 )
-                                if (preview.downloadUrl.isNotBlank()) Text("已提取可直接下载的公开源", color = Success, fontSize = 10.sp)
+                                if (preview.downloadUrl.isNotBlank()) Text("已提取可直接下载的公开源", color = Success, fontSize = 12.sp)
                             }
                         }
                         preview.warning?.let {
                             Spacer(Modifier.height(9.dp))
-                            Text(it, color = Warning, fontSize = 10.sp)
+                            Text(it, color = Warning, fontSize = 12.sp)
                         }
                         Spacer(Modifier.height(14.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -843,7 +815,7 @@ private fun MediaPage(controller: DesktopAppController) {
                             }
                             Spacer(Modifier.width(14.dp))
                             Checkbox(media.embedSubtitles, { media.embedSubtitles = it })
-                            Text("尝试嵌入中英文字幕", fontSize = 11.sp)
+                            Text("尝试嵌入中英文字幕", fontSize = 12.sp)
                         }
                     }
                 }
@@ -869,14 +841,14 @@ private fun MediaPage(controller: DesktopAppController) {
                     Text("查看下载任务 (${media.tasks.size})")
                 }
                 Spacer(Modifier.weight(1f))
-                Text("默认单任务满速 · 失败自动保留断点", color = Muted, fontSize = 10.sp)
+                Text("默认单任务满速 · 失败自动保留断点", color = Muted, fontSize = 12.sp)
             }
 
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 listOf("YouTube", "哔哩哔哩", "抖音", "X", "TikTok", "小红书", "微博", "视频号").forEach { name ->
                     Surface(color = WarmCard, border = androidx.compose.foundation.BorderStroke(1.dp, Line), shape = RoundedCornerShape(18.dp)) {
-                        Text(name, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp))
+                        Text(name, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp))
                     }
                 }
             }
@@ -908,7 +880,7 @@ private fun MediaToolsPage(controller: DesktopAppController) {
                             Text(
                                 if (status == null) "正在检查组件…" else "yt-dlp ${status.ytDlpVersion} · FFmpeg ${status.ffmpegVersion} · Deno ${status.denoVersion}",
                                 color = if (status?.ready == false) Error else Muted,
-                                fontSize = 10.sp
+                                fontSize = 12.sp
                             )
                         }
                         TextButton(onClick = media::refreshCoreStatus, enabled = !media.coreChecking) { Text("重新检查") }
@@ -948,7 +920,7 @@ private fun MediaToolsPage(controller: DesktopAppController) {
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text("视频截图", fontWeight = FontWeight.SemiBold)
-                        Text("输入时间点后，从本地视频导出高清 JPG", color = Muted, fontSize = 10.sp)
+                        Text("输入时间点后，从本地视频导出高清 JPG", color = Muted, fontSize = 12.sp)
                     }
                     OutlinedTextField(
                         value = screenshotSecond,
@@ -1001,18 +973,61 @@ private fun MediaToolCard(
             }
             Spacer(Modifier.height(13.dp))
             Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-            Text(subtitle, color = Muted, fontSize = 10.sp, lineHeight = 14.sp, maxLines = 2)
+            Text(subtitle, color = Muted, fontSize = 12.sp, lineHeight = 14.sp, maxLines = 2)
             Spacer(Modifier.weight(1f))
-            Text("开始使用 →", color = Accent, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+            Text("开始使用 →", color = Accent, fontSize = 12.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
 
 @Composable
 private fun DownloadsPage(controller: DesktopAppController) {
-    PageFrame("统一下载队列", "网盘文件与公开视频集中管理；单任务默认满速并支持断点续传") {
-        val mediaTasks = controller.media.tasks
-        if (controller.downloads.isEmpty() && mediaTasks.isEmpty()) {
+    var query by remember { mutableStateOf("") }
+    var kind by remember { mutableStateOf("全部") }
+    var addDirect by remember { mutableStateOf(false) }
+    var directUrl by remember { mutableStateOf("") }
+    var directName by remember { mutableStateOf("") }
+    var directError by remember { mutableStateOf<String?>(null) }
+    var clearAll by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<com.yunx.desktop.core.DesktopDownloadTask?>(null) }
+    if(addDirect) AlertDialog(onDismissRequest = { addDirect = false },title = { Text("添加文件直链") },
+        text = { Column {
+            OutlinedTextField(directUrl,{ directUrl = it },label = { Text("HTTP/HTTPS 文件直链") })
+            OutlinedTextField(directName,{ directName = it },label = { Text("保存文件名（可选）") })
+            directError?.let { Text(it,color = Error) }
+        } },
+        confirmButton = { Button(onClick = {
+            runCatching { controller.addDirectDownload(directUrl,directName) }.onSuccess { addDirect = false }.onFailure { directError = it.message }
+        }) { Text("开始下载") } },
+        dismissButton = { TextButton(onClick = { addDirect = false }) { Text("取消") } })
+    if(clearAll || pendingDelete != null) AlertDialog(onDismissRequest = { clearAll = false; pendingDelete = null },
+        title = { Text(if(clearAll) "删除全部任务？" else "删除下载任务？") },
+        text = { Text("会取消相关任务并清理未完成临时文件。已完成的文件会保留。") },
+        confirmButton = { Button(onClick = {
+            if(clearAll) {
+                controller.downloads.toList().forEach(controller::removeDownload)
+                controller.media.tasks.toList().forEach(controller.media::remove)
+            } else pendingDelete?.let(controller::removeDownload)
+            clearAll = false; pendingDelete = null
+        }) { Text("确认删除") } },
+        dismissButton = { TextButton(onClick = { clearAll = false; pendingDelete = null }) { Text("取消") } })
+    PageFrame("下载", "文件与视频任务统一管理") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(query,{ query = it },Modifier.weight(1f),placeholder = { Text("搜索任务名称") },singleLine = true)
+            Spacer(Modifier.width(10.dp))
+            TextButton(onClick = { directUrl = ""; directName = ""; directError = null; addDirect = true }) { Text("添加直链") }
+            TextButton(onClick = { clearAll = true }) { Text("删除全部") }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("全部","网盘与文件","视频与音频","已完成","未完成").forEach { label ->
+                androidx.compose.material3.FilterChip(kind == label,{ kind = label },label = { Text(label) })
+            }
+        }
+        val cloudTasks = controller.downloads.filter { task -> task.fileName.contains(query,true) && kind != "视频与音频" &&
+            (kind != "已完成" || task.state == TaskState.COMPLETED) && (kind != "未完成" || task.state != TaskState.COMPLETED) }
+        val mediaTasks = controller.media.tasks.filter { task -> task.title.contains(query,true) && kind != "网盘与文件" &&
+            (kind != "已完成" || task.state == MediaTaskState.COMPLETED) && (kind != "未完成" || task.state != MediaTaskState.COMPLETED) }
+        if (cloudTasks.isEmpty() && mediaTasks.isEmpty()) {
             EmptyState(Icons.Outlined.Download, "还没有下载任务", "解析网盘分享或公开视频链接后，任务会显示在这里")
         } else {
             val active = controller.downloads.count { it.state == TaskState.PREPARING || it.state == TaskState.DOWNLOADING } +
@@ -1020,11 +1035,7 @@ private fun DownloadsPage(controller: DesktopAppController) {
             val completed = controller.downloads.count { it.state == TaskState.COMPLETED } +
                 mediaTasks.count { it.state == MediaTaskState.COMPLETED }
             val total = controller.downloads.size + mediaTasks.size
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                DownloadMetric("全部任务", total.toString(), Accent, AccentSoft, Modifier.weight(1f))
-                DownloadMetric("正在下载", active.toString(), Purple, Color(0xFFF3E9DF), Modifier.weight(1f))
-                DownloadMetric("已经完成", completed.toString(), Success, SuccessSoft, Modifier.weight(1f))
-            }
+            Text("共 $total 项 · 进行中 $active · 已完成 $completed", color = Muted, fontSize = 14.sp)
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = controller::pauseAll) { Text("全部暂停") }
@@ -1034,12 +1045,12 @@ private fun DownloadsPage(controller: DesktopAppController) {
             val state = rememberLazyListState()
             Box(Modifier.fillMaxSize()) {
                 LazyColumn(state = state, verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxSize().padding(end = 10.dp)) {
-                    if (controller.downloads.isNotEmpty()) {
+                    if (cloudTasks.isNotEmpty()) {
                         item("cloud-heading") {
-                            Text("网盘文件", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                            Text("网盘文件", color = Muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
-                    items(controller.downloads, key = { it.id }) { task ->
+                    items(cloudTasks, key = { it.id }) { task ->
                         Card(
                             colors = CardDefaults.cardColors(containerColor = WarmCard),
                             border = androidx.compose.foundation.BorderStroke(1.dp, Line),
@@ -1060,7 +1071,7 @@ private fun DownloadsPage(controller: DesktopAppController) {
                                         else -> Unit
                                     }
                                     Spacer(Modifier.width(6.dp))
-                                    IconButton(onClick = { controller.removeDownload(task) }) {
+                                    IconButton(onClick = { pendingDelete = task }) {
                                         Icon(Icons.Outlined.DeleteOutline, "删除下载任务", tint = Muted, modifier = Modifier.size(18.dp))
                                     }
                                 }
@@ -1075,9 +1086,9 @@ private fun DownloadsPage(controller: DesktopAppController) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     val detail = if (task.state in setOf(TaskState.FAILED, TaskState.NEEDS_REAUTH, TaskState.NEEDS_INPUT)) task.error.orEmpty() else
                                         "${formatBytes(task.progress.downloaded)} / ${formatBytes(task.progress.total)}   ${formatSpeed(task.progress.bytesPerSecond)}"
-                                    Text(detail, color = if (task.state == TaskState.FAILED) Error else Muted, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                                    Text(detail, color = if (task.state == TaskState.FAILED) Error else Muted, fontSize = 12.sp, modifier = Modifier.weight(1f))
                                     if (task.retryCount > 0 || task.errorCode.isNotBlank()) {
-                                        Text("${task.errorCode.ifBlank { "自动重试" }} · 已重试 ${task.retryCount} 次", color = Warning, fontSize = 10.sp)
+                                        Text("${task.errorCode.ifBlank { "自动重试" }} · 已重试 ${task.retryCount} 次", color = Warning, fontSize = 12.sp)
                                         Spacer(Modifier.width(10.dp))
                                     }
                                     task.outputFile?.let { file ->
@@ -1088,13 +1099,16 @@ private fun DownloadsPage(controller: DesktopAppController) {
                                         }
                                     }
                                 }
+                                CopyDownloadLinkButton { controller.copyTaskLink(task) }
+                                if(task.state == TaskState.COMPLETED) CompletedFileActions(controller,task.outputFile,
+                                    onAgain = { controller.downloadAgain(task) }, onRemoved = { controller.removeDownload(task) })
                             }
                         }
                     }
                     if (mediaTasks.isNotEmpty()) {
                         item("media-heading") {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("公开视频与媒体", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                                Text("公开视频与媒体", color = Muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                                 TextButton(onClick = controller.media::clearFinished) { Text("清理已完成") }
                             }
                         }
@@ -1111,6 +1125,11 @@ private fun DownloadsPage(controller: DesktopAppController) {
 
 @Composable
 private fun MediaTaskCard(controller: DesktopAppController, task: DesktopMediaTask) {
+    var confirmDelete by remember { mutableStateOf(false) }
+    if(confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("删除任务？") },
+        text = { Text("取消任务并清理未完成的临时文件，已完成文件仍会保留。") },
+        confirmButton = { Button(onClick = { controller.media.remove(task); confirmDelete = false }) { Text("删除任务") } },
+        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("取消") } })
     val stateColor = when (task.state) {
         MediaTaskState.COMPLETED -> Success
         MediaTaskState.FAILED -> Error
@@ -1134,7 +1153,7 @@ private fun MediaTaskCard(controller: DesktopAppController, task: DesktopMediaTa
                 Spacer(Modifier.width(11.dp))
                 Column(Modifier.weight(1f)) {
                     Text(task.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
-                    Text("${task.platform} · ${task.formatLabel}", color = Muted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("${task.platform} · ${task.formatLabel}", color = Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Text(mediaTaskStateName(task.state), color = stateColor, fontSize = 12.sp)
                 when (task.state) {
@@ -1147,7 +1166,7 @@ private fun MediaTaskCard(controller: DesktopAppController, task: DesktopMediaTa
                 if (task.state !in setOf(MediaTaskState.COMPLETED, MediaTaskState.CANCELLED)) {
                     IconButton(onClick = { controller.media.cancel(task) }) { Icon(Icons.Outlined.Cancel, "取消", tint = Muted) }
                 }
-                IconButton(onClick = { controller.media.remove(task) }) {
+                IconButton(onClick = { confirmDelete = true }) {
                     Icon(Icons.Outlined.DeleteOutline, "删除任务", tint = Muted, modifier = Modifier.size(18.dp))
                 }
             }
@@ -1163,7 +1182,7 @@ private fun MediaTaskCard(controller: DesktopAppController, task: DesktopMediaTa
                 val detail = task.error?.takeIf(String::isNotBlank)
                     ?: listOf(task.stage, task.speed, task.eta.takeIf(String::isNotBlank)?.let { "剩余 $it" }.orEmpty())
                         .filter(String::isNotBlank).joinToString(" · ")
-                Text(detail, color = if (task.error != null) Error else Muted, fontSize = 11.sp, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(detail, color = if (task.error != null) Error else Muted, fontSize = 12.sp, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
                 task.outputFile?.takeIf(File::isFile)?.let { file ->
                     TextButton(onClick = { controller.openFolder(file) }) {
                         Icon(Icons.Outlined.FolderOpen, null, modifier = Modifier.size(16.dp))
@@ -1172,6 +1191,9 @@ private fun MediaTaskCard(controller: DesktopAppController, task: DesktopMediaTa
                     }
                 }
             }
+            CopyDownloadLinkButton { controller.media.engine.analyze(task.sourceUrl).downloadUrl to {} }
+            if(task.state == MediaTaskState.COMPLETED) CompletedFileActions(controller,task.outputFile,
+                onAgain = { controller.media.downloadAgain(task) },onRemoved = { controller.media.remove(task) })
         }
     }
 }
@@ -1211,7 +1233,7 @@ private fun SavedListCard(
                         Row(Modifier.fillMaxWidth().clickable { onOpen(item.third) }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text(item.first.ifBlank { "未命名分享" }, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(item.second, color = Muted, fontSize = 11.sp)
+                                Text(item.second, color = Muted, fontSize = 12.sp)
                             }
                             onRemove?.let { IconButton(onClick = { it(item.third) }) { Icon(Icons.Outlined.DeleteOutline, "删除收藏") } }
                         }
@@ -1261,7 +1283,7 @@ private fun DownloadMetric(label: String, value: String, tint: Color, container:
             Spacer(Modifier.width(11.dp))
             Column {
                 Text(value, fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
-                Text(label, color = Muted, fontSize = 11.sp)
+                Text(label, color = Muted, fontSize = 12.sp)
             }
         }
     }
@@ -1347,6 +1369,9 @@ private fun CredentialCard(controller: DesktopAppController, title: String, key:
                 Text(if (saved) "已配置" else "未配置", color = if (saved) Accent else Muted, fontSize = 12.sp)
             }
             Spacer(Modifier.height(12.dp))
+            if (key == CredentialKey.PAN123_TOKEN) TokenLoginCard(controller.credentialStore, false) {
+                value = controller.credentialStore.get(key).orEmpty(); saved = value.isNotBlank()
+            }
             if (supportsDirectLogin) {
                 Surface(color = AccentSoft, shape = RoundedCornerShape(11.dp)) {
                     Row(
@@ -1355,7 +1380,7 @@ private fun CredentialCard(controller: DesktopAppController, title: String, key:
                     ) {
                         Column(Modifier.weight(1f)) {
                             Text("软件内登录", color = Accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                            Text("打开内置官方登录页，完成后自动保存授权", color = Muted, fontSize = 10.sp)
+                            Text("打开内置官方登录页，完成后自动保存授权", color = Muted, fontSize = 12.sp)
                         }
                         Button(
                             onClick = ::handleEmbeddedLogin,
@@ -1366,7 +1391,7 @@ private fun CredentialCard(controller: DesktopAppController, title: String, key:
                                 CircularProgressIndicator(Modifier.size(14.dp), color = Color.White, strokeWidth = 2.dp)
                                 Spacer(Modifier.width(5.dp))
                             }
-                            Text(if (saved) "重新登录" else "登录", fontSize = 11.sp)
+                            Text(if (saved) "重新登录" else "登录", fontSize = 12.sp)
                         }
                         if (saved) {
                             IconButton(onClick = {
@@ -1400,7 +1425,7 @@ private fun CredentialCard(controller: DesktopAppController, title: String, key:
                     Text(
                         it,
                         color = if (browserError) Error else Success,
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         modifier = Modifier.padding(top = 7.dp)
                     )
                 }
@@ -1446,6 +1471,11 @@ private fun XunleiCredentialCard(controller: DesktopAppController) {
         shape = RoundedCornerShape(14.dp)
     ) {
         Column(Modifier.fillMaxWidth().padding(17.dp)) {
+            TokenLoginCard(controller.credentialStore, true) {
+                access = controller.credentialStore.get(CredentialKey.XUNLEI_ACCESS_TOKEN).orEmpty()
+                refresh = controller.credentialStore.get(CredentialKey.XUNLEI_REFRESH_TOKEN).orEmpty()
+                saved = access.isNotBlank()
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.VpnKey, null, tint = if (saved) Accent else Muted)
                 Spacer(Modifier.width(10.dp))
@@ -1545,7 +1575,7 @@ private fun SponsorCodeCard(
                 Spacer(Modifier.width(9.dp))
                 Column {
                     Text(title, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                    Text(subtitle, color = Muted, fontSize = 11.sp)
+                    Text(subtitle, color = Muted, fontSize = 12.sp)
                 }
             }
             Spacer(Modifier.height(14.dp))
@@ -1566,6 +1596,7 @@ private fun SponsorCodeCard(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SettingsPage(controller: DesktopAppController) {
     var directory by remember { mutableStateOf(controller.downloadDirectory) }
@@ -1580,6 +1611,8 @@ private fun SettingsPage(controller: DesktopAppController) {
     var proxyPort by remember { mutableStateOf(controller.settings.proxyPort.toString()) }
     PageFrame("设置", "显示、支持、诊断与桌面下载") {
       Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())) {
+        DesktopDownloadPreferences(controller)
+        Spacer(Modifier.height(16.dp))
         Card(
             colors = CardDefaults.cardColors(containerColor = WarmCard),
             border = androidx.compose.foundation.BorderStroke(1.dp, Line),
@@ -1587,7 +1620,7 @@ private fun SettingsPage(controller: DesktopAppController) {
         ) {
             Column(Modifier.fillMaxWidth().padding(22.dp)) {
                 Text("性能预设", fontWeight = FontWeight.Medium)
-                Text("稳定适合网络波动，均衡适合日常，极速会占用更多带宽和连接", color = Muted, fontSize = 11.sp)
+                Text("稳定适合网络波动，均衡适合日常，极速会占用更多带宽和连接", color = Muted, fontSize = 12.sp)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(DesktopPreset.STABLE, DesktopPreset.BALANCED, DesktopPreset.TURBO, DesktopPreset.SINGLE_TASK_MAX).forEach { preset ->
@@ -1607,7 +1640,7 @@ private fun SettingsPage(controller: DesktopAppController) {
                 }
                 Spacer(Modifier.height(20.dp))
                 Text("单任务连接数：$threads 路", fontWeight = FontWeight.Medium)
-                Text("软件会按文件大小自动使用合适的并发数，小文件不会被强行切碎", color = Muted, fontSize = 11.sp)
+                Text("软件会按文件大小自动使用合适的并发数，小文件不会被强行切碎", color = Muted, fontSize = 12.sp)
                 Spacer(Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(8, 16, 32, 48, 64).forEach { count ->
@@ -1623,7 +1656,7 @@ private fun SettingsPage(controller: DesktopAppController) {
                 }
                 Spacer(Modifier.height(18.dp))
                 Text("Windows 桌面集成", fontWeight = FontWeight.Medium)
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                FlowRow {
                     Checkbox(closeToTray, { closeToTray = it }); Text("关闭窗口后留在托盘")
                     Spacer(Modifier.width(18.dp))
                     Checkbox(notifications, { notifications = it }); Text("完成/失败通知")
@@ -1632,7 +1665,7 @@ private fun SettingsPage(controller: DesktopAppController) {
                 }
                 Spacer(Modifier.height(18.dp))
                 Text("网络代理", fontWeight = FontWeight.Medium)
-                Text("系统代理适合大多数用户；也可指定 HTTP 或 SOCKS5", color = Muted, fontSize = 11.sp)
+                Text("系统代理适合大多数用户；也可指定 HTTP 或 SOCKS5", color = Muted, fontSize = 12.sp)
                 Spacer(Modifier.height(7.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                     ProxyMode.entries.forEach { mode ->
@@ -1668,10 +1701,10 @@ private fun SettingsPage(controller: DesktopAppController) {
             shape = RoundedCornerShape(16.dp)
         ) {
             Column(Modifier.fillMaxWidth().padding(20.dp)) {
-                Text("常规与支持", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Text("常规与支持", color = Muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(8.dp))
                 SettingsActionRow(Icons.Outlined.Palette, "显示主题", "护眼暖色 · 清晰字体 · 可减少动画") {
-                    message = "当前使用护眼暖色主题；动画强度可在上方单独调整"
+                    controller.page = AppPage.APPEARANCE
                 }
                 HorizontalDivider(color = Line)
                 SettingsActionRow(Icons.Outlined.BugReport, "诊断中心", "检查平台连通性、登录状态和运行环境") {
@@ -1722,7 +1755,7 @@ private fun SettingsPage(controller: DesktopAppController) {
                         Text(
                             controller.updateMessage ?: if (controller.updateConfigured) "作者签名安全更新通道" else "安全更新通道未配置",
                             color = if (controller.updateConfigured) Success else Warning,
-                            fontSize = 11.sp
+                            fontSize = 12.sp
                         )
                     }
                     TextButton(onClick = controller::checkForUpdates, enabled = !controller.updateChecking) {
@@ -1733,7 +1766,7 @@ private fun SettingsPage(controller: DesktopAppController) {
                 HorizontalDivider(color = Line)
                 Spacer(Modifier.height(14.dp))
                 Text("反馈仓库（我的项目）", fontWeight = FontWeight.Medium, fontSize = 13.sp)
-                Text("建议填你的维护仓库，问题会直接进入对应项目 Issues", color = Muted, fontSize = 11.sp)
+                Text("建议填你的维护仓库，问题会直接进入对应项目 Issues", color = Muted, fontSize = 12.sp)
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
@@ -1774,7 +1807,7 @@ private fun SettingsActionRow(
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.Medium, fontSize = 14.sp)
-            Text(subtitle, color = Muted, fontSize = 11.sp)
+            Text(subtitle, color = Muted, fontSize = 12.sp)
         }
         Text("打开", color = Accent, fontSize = 12.sp)
     }
@@ -1797,7 +1830,7 @@ private fun DesktopUpdateDialog(controller: DesktopAppController, release: Deskt
                 Spacer(Modifier.height(8.dp))
                 Surface(
                     Modifier.fillMaxWidth().heightIn(max = 230.dp),
-                    color = Color(0xFFFFFAF3),
+                    color = Color(0xFFFCFAF7),
                     shape = RoundedCornerShape(12.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Line)
                 ) {
@@ -1806,9 +1839,9 @@ private fun DesktopUpdateDialog(controller: DesktopAppController, release: Deskt
                     }
                 }
                 Spacer(Modifier.height(10.dp))
-                Text("安装包会在软件内下载，并校验作者签名清单中的 SHA-256。", color = Muted, fontSize = 11.sp)
+                Text("安装包会在软件内下载，并校验作者签名清单中的 SHA-256。", color = Muted, fontSize = 12.sp)
                 controller.updateMessage?.let {
-                    Text(it, color = if (controller.downloadedUpdate != null) Success else Warning, fontSize = 11.sp)
+                    Text(it, color = if (controller.downloadedUpdate != null) Success else Warning, fontSize = 12.sp)
                 }
             }
         },

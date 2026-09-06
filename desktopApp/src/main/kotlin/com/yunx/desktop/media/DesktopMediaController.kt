@@ -9,6 +9,7 @@ import com.jiexi.core.link.UnifiedLinkClassifier
 import com.sun.jna.platform.win32.Crypt32Util
 import com.yunx.desktop.core.DesktopDataPaths
 import com.yunx.desktop.settings.DesktopSettings
+import com.yunx.desktop.system.WindowsWifiConnection
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -81,7 +82,7 @@ class DesktopMediaController(
             runCatching { engine.analyze(inputText) }
                 .onSuccess { value -> withContext(Dispatchers.Swing) {
                     preview = value
-                    selectedFormat = value.formats.firstOrNull()
+                    selectedFormat = preferredFormat(value.formats)
                     analyzing = false
                 } }
                 .onFailure { error -> withContext(Dispatchers.Swing) {
@@ -90,6 +91,13 @@ class DesktopMediaController(
                 } }
         }
     }
+
+    private fun preferredFormat(formats: List<MediaFormatChoice>): MediaFormatChoice? =
+        when(settings.mediaQuality) {
+            "audio" -> formats.firstOrNull { it.selector == "bestaudio/best" }
+            "1080", "720" -> formats.firstOrNull { it.selector.contains("height<=${settings.mediaQuality}]") }
+            else -> formats.firstOrNull()
+        } ?: formats.firstOrNull()
 
     fun enqueueAll() {
         if (queueing) return
@@ -111,7 +119,7 @@ class DesktopMediaController(
                     preview?.takeIf { it.sourceUrl == link.originalUrl } ?: engine.analyze(link.originalUrl)
                 }.onSuccess { info ->
                     val choice = preferred?.takeIf { selected -> info.formats.any { it.selector == selected.selector } }
-                        ?: info.formats.firstOrNull()
+                        ?: preferredFormat(info.formats)
                         ?: DesktopMediaEngine.defaultFormats().first()
                     val task = DesktopMediaTask(
                         sourceUrl = info.sourceUrl,
@@ -175,6 +183,12 @@ class DesktopMediaController(
         schedule()
     }
 
+    fun downloadAgain(task: DesktopMediaTask) {
+        tasks.add(0, DesktopMediaTask(task.sourceUrl, "", task.title, task.platform,
+            task.formatSelector, task.formatLabel, task.outputFormat, task.embedSubtitles))
+        persist(); schedule()
+    }
+
     fun cancel(task: DesktopMediaTask) {
         requestedActions[task.id] = "cancel"
         if (task.state in setOf(MediaTaskState.WAITING, MediaTaskState.PAUSED, MediaTaskState.INTERRUPTED, MediaTaskState.FAILED)) {
@@ -209,6 +223,11 @@ class DesktopMediaController(
     }
 
     fun pauseAll() = tasks.filter { it.state in activeStates }.forEach(::pause)
+    fun pauseForWifi() {
+        tasks.filter { it.state in activeStates }.forEach { task ->
+            pause(task); task.stage = "等待 Wi-Fi，连接后点击继续"
+        }
+    }
 
     fun resumeAll() {
         tasks.filter { it.state in setOf(MediaTaskState.PAUSED, MediaTaskState.INTERRUPTED, MediaTaskState.FAILED) }
@@ -278,6 +297,10 @@ class DesktopMediaController(
     }
 
     private suspend fun runTask(task: DesktopMediaTask) {
+        if(settings.wifiOnly && !WindowsWifiConnection.isConnected()) {
+            withContext(Dispatchers.Swing) { task.state = MediaTaskState.PAUSED; task.stage = "等待 Wi-Fi，连接后点击继续"; persist() }
+            return
+        }
         removals.begin(task.id)
         val shouldRun = withContext(Dispatchers.Swing) {
             if (!tasks.contains(task) || removals.isRemoved(task.id)) return@withContext false
@@ -301,7 +324,7 @@ class DesktopMediaController(
         var deleteWorkspaceAfterExit = false
         val workDirectory = DesktopMediaWorkspace.taskDirectory(downloadRoot, task.id)
         try {
-            process = engine.startDownload(task, workDirectory, settings.threadCount.coerceIn(1, 64))
+            process = engine.startDownload(task, workDirectory, settings.threadCount.coerceIn(1, 64), settings.retryLimit, settings.mediaNameRule, settings.speedLimitBytes)
             processes[task.id] = process
             if (requestedActions.containsKey(task.id) || removals.isRemoved(task.id)) terminateProcess(process)
             process.inputStream.bufferedReader(Charsets.UTF_8).useLines { output ->

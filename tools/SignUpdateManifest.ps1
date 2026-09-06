@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)][string]$ReleaseDirectory,
-    [string]$Version = '4.0.0',
+    [string]$Version = '4.1.0',
     [string]$Repository = 'chanha666/JieXi',
     [string]$PrivateKeyPath = 'D:\CodexSecrets\解析\update-private-key.pem',
     [string]$OutputPath = (Join-Path $ReleaseDirectory 'update-manifest.json')

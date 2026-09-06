@@ -56,7 +56,7 @@ class DesktopResolver(private val credentials: CredentialStore) {
         if (current.credential.isBlank() && !supportsAnonymousDownload(current.platform)) {
             throw IllegalStateException(
                 "${platformName(current.platform)}允许匿名查看分享，但官方下载接口要求账号授权；" +
-                    "如需下载，请在“云盘登录”中完成授权"
+                    "如需下载，请在“我的 → 网盘与账号”中完成授权"
             )
         }
         return current.repository.getShareDownloadLink(current.session, file, current.credential).getOrThrow()
@@ -121,12 +121,12 @@ class DesktopResolver(private val credentials: CredentialStore) {
             XunleiResolveRepository(
                 api = api,
                 accountProvider = { credentials.get(CredentialKey.XUNLEI_ACCESS_TOKEN) },
-                deviceIdProvider = { XunleiDeviceFingerprint.deviceId() },
+                deviceIdProvider = { (credentials.get(CredentialKey.XUNLEI_DEVICE_ID) ?: XunleiDeviceFingerprint.deviceId()) },
                 captchaProvider = { credentials.get(CredentialKey.XUNLEI_CAPTCHA_TOKEN) },
                 refreshProvider = {
                     val refresh = credentials.get(CredentialKey.XUNLEI_REFRESH_TOKEN)
                     if (refresh == null) null else {
-                        api.refreshToken(refresh, XunleiDeviceFingerprint.deviceId())?.also { (access, nextRefresh) ->
+                        api.refreshToken(refresh, (credentials.get(CredentialKey.XUNLEI_DEVICE_ID) ?: XunleiDeviceFingerprint.deviceId()))?.also { (access, nextRefresh) ->
                             credentials.put(CredentialKey.XUNLEI_ACCESS_TOKEN, access)
                             credentials.put(CredentialKey.XUNLEI_REFRESH_TOKEN, nextRefresh)
                         }

@@ -7,6 +7,7 @@ import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.SecretKeySpec
 
 /**
  * 网盘认证备份的 AES 加密/解密：
@@ -76,10 +77,10 @@ object AuthCrypto {
             (payload.size >= magicV2.size && payload.copyOfRange(0, magicV2.size).contentEquals(magicV2))
     }.getOrDefault(false)
 
-    private fun deriveKey(password: String, salt: ByteArray, iterations: Int): SecretKey {
+    internal fun deriveKey(password: String, salt: ByteArray, iterations: Int): SecretKey {
         val spec = PBEKeySpec(password.toCharArray(), salt, iterations, KEY_LENGTH)
         return try {
-            SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec)
+            SecretKeySpec(SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded, "AES")
         } finally {
             spec.clearPassword()
         }

@@ -171,7 +171,7 @@ private fun AppHeader(versionName: String, versionCode: Int) {
     ) {
         Box(modifier = Modifier.size(88.dp), contentAlignment = Alignment.Center) {
             Image(
-                painter = painterResource(R.drawable.icon),
+                painter = painterResource(R.drawable.jiexi_mark),
                 contentDescription = "解析图标",
                 modifier = Modifier.size(88.dp),
                 contentScale = ContentScale.Fit

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity() {
     private val incomingShare = MutableStateFlow("")
+    private val incomingDestination = MutableStateFlow("")
 
     // Android 13+：下载前台服务通知需要动态授权，首次启动即引导（无论通知栏开关状态，授权后通知才可见）
     private val notificationPermLauncher =
@@ -37,7 +38,7 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermissionIfNeeded()
         setContent {
             ComposeEmptyActivityTheme {
-                MainScreen(incomingShare.collectAsState().value) { incomingShare.value = "" }
+                MainScreen(incomingShare.collectAsState().value, incomingDestination.collectAsState().value) { incomingShare.value = "" }
             }
         }
     }
@@ -49,6 +50,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun readSharedText(intent: Intent?) {
+        val destination = intent?.getStringExtra("destination").orEmpty()
+        incomingDestination.value = if (destination.isBlank()) "" else "$destination:${System.nanoTime()}"
         val text = intent?.getStringExtra(EXTRA_SHARED_TEXT).orEmpty()
         if (text.isNotBlank()) incomingShare.value = text
     }

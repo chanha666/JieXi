@@ -363,9 +363,9 @@ suspend fun listShare(surl: String, sekey: String, dir: String, cookie: String, 
     // ---------- 云盘文件管理（百度网盘功能） ----------
 
     /** 列出个人网盘目录，返回 ShareFile（fid=fs_id，fidToken=绝对路径 path） */
-    suspend fun listCloudFiles(dir: String, cookie: String): List<ShareFile> = withContext(Dispatchers.IO) {
+    suspend fun listCloudFiles(dir: String, cookie: String, page: Int = 1): List<ShareFile> = withContext(Dispatchers.IO) {
         val url = "https://yun.baidu.com/api/list?clienttype=0&app_id=${BaiduConstants.APP_ID}" +
-            "&web=1&order=time&desc=1&dir=" + URLEncoder.encode(dir, "UTF-8") + "&num=100&page=1"
+            "&web=1&order=time&desc=1&dir=" + URLEncoder.encode(dir, "UTF-8") + "&num=100&page=$page"
         val request = Request.Builder()
             .url(url)
             .header("Cookie", cookie)
@@ -374,10 +374,10 @@ suspend fun listShare(surl: String, sekey: String, dir: String, cookie: String, 
             .header("Referer", "https://yun.baidu.com/disk/main")
             .get()
             .build()
-        runCatching {
+        run {
             val json = executeJson(request)
-            if (json.optInt("errno") != 0) return@runCatching emptyList()
-            val array = json.optJSONArray("list") ?: return@runCatching emptyList()
+            check(json.optInt("errno") == 0) { "百度目录读取失败（errno=" + json.optInt("errno") + "），请检查登录状态" }
+            val array = json.optJSONArray("list") ?: return@run emptyList()
             buildList {
                 for (i in 0 until array.length()) {
                     val item = array.optJSONObject(i) ?: continue
@@ -394,7 +394,7 @@ suspend fun listShare(surl: String, sekey: String, dir: String, cookie: String, 
                     )
                 }
             }
-        }.getOrDefault(emptyList())
+        }
     }
 
     /** 重命名（filemanager opera=rename，按完整路径） */

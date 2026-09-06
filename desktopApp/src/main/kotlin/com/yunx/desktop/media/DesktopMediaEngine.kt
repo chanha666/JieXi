@@ -137,7 +137,7 @@ class DesktopMediaEngine(
         return MediaToolStatus(ytDlp, ffmpeg, deno, plugin, true, "本地组件完整，可离线启动")
     }
 
-    fun startDownload(task: DesktopMediaTask, outputDirectory: File, concurrentFragments: Int): Process {
+    fun startDownload(task: DesktopMediaTask, outputDirectory: File, concurrentFragments: Int, retries: Int = 10, nameRule: String = "title-id", speedLimit: Long = 0L): Process {
         require(tools.ready) { "媒体核心不完整，请重新安装解析。" }
         outputDirectory.mkdirs()
         require(outputDirectory.isDirectory && outputDirectory.canWrite()) { "下载目录不可写：${outputDirectory.absolutePath}" }
@@ -148,7 +148,11 @@ class DesktopMediaEngine(
         val refreshedDownloadUrl = resolveFreshDownloadUrl(task)
         val source = refreshedDownloadUrl.ifBlank { task.sourceUrl }
         val safeTitle = sanitizeFileName(task.title).take(150).ifBlank { "解析视频" }
-        val outputTemplate = if (refreshedDownloadUrl.isNotBlank()) "$safeTitle.%(ext)s" else "%(title).160B [%(id)s].%(ext)s"
+        val outputTemplate = if (refreshedDownloadUrl.isNotBlank()) "$safeTitle.%(ext)s" else when(nameRule) {
+            "title" -> "%(title).160B.%(ext)s"
+            "uploader-title" -> "%(uploader,channel,creator|作者)s - %(title).140B.%(ext)s"
+            else -> "%(title).160B [%(id)s].%(ext)s"
+        }
         val args = mutableListOf(
             "--newline",
             "--color", "never",
@@ -160,8 +164,8 @@ class DesktopMediaEngine(
             "--output", outputTemplate,
             "--progress-template", "download:[progress] %(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s",
             "--print", "after_move:[finished] %(filepath)s",
-            "--retries", "10",
-            "--fragment-retries", "10",
+            "--retries", retries.coerceIn(0,10).toString(),
+            "--fragment-retries", retries.coerceIn(0,10).toString(),
             "--retry-sleep", "exp=1:20",
             "--socket-timeout", "60",
             "--concurrent-fragments", concurrentFragments.coerceIn(1, 64).toString(),
@@ -169,6 +173,7 @@ class DesktopMediaEngine(
             "--js-runtimes", "deno:${tools.deno.absolutePath}"
         )
         if (tools.pluginDirectory.isDirectory) args += listOf("--plugin-dirs", tools.pluginDirectory.absolutePath)
+        if(speedLimit > 0) args += listOf("--limit-rate", speedLimit.toString())
         args += listOf("-f", task.formatSelector)
         when (task.platform) {
             "抖音" -> args += listOf("--add-header", "Referer:https://www.douyin.com/", "--add-header", "User-Agent:$DESKTOP_USER_AGENT")
@@ -662,6 +667,7 @@ class DesktopMediaEngine(
                 MediaFormatChoice("bestvideo*+bestaudio/best", "公开最高画质（源站提供时可到 8K）"),
                 MediaFormatChoice("bestvideo*[height<=2160]+bestaudio/best[height<=2160]", "最高 4K"),
                 MediaFormatChoice("bestvideo*[height<=1080]+bestaudio/best[height<=1080]", "最高 1080p"),
+                MediaFormatChoice("bestvideo*[height<=720]+bestaudio/best[height<=720]", "最高 720p"),
                 MediaFormatChoice("bestaudio/best", "仅音频 MP3")
             )
         }

@@ -104,6 +104,7 @@ import com.yunx.app.ui.theme.ThemeController
 
 /** 预置主题色（Material 风格种子色） */
 private val presetColors = listOf(
+    "杏橙" to 0xFFB65326L,
     "蓝色" to 0xFF415F91L,
     "靛蓝" to 0xFF3F51B5L,
     "紫色" to 0xFF6750A4L,
@@ -146,7 +147,7 @@ fun ThemeScreen(
         )
     }
 
-    // Android12- 动态色不可用，视为默认蓝色
+    // Android12- 动态色不可用，视为暖白杏橙
     val effectiveColorMode = if (ThemeController.colorMode == 0 && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
         1
     } else {
@@ -259,7 +260,7 @@ fun ThemeScreen(
                                     text = when {
                                         effectiveColorMode == 0 -> "动态色彩（跟随壁纸）"
                                         effectiveColorMode == 2 -> "自定义颜色"
-                                        else -> "默认蓝色"
+                                        else -> "暖白杏橙"
                                     },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -336,8 +337,8 @@ fun ThemeScreen(
                                         contentPadding = PaddingValues(top = 10.dp, bottom = 8.dp)
                                     ) {
                                         itemsIndexed(presetColors) { _, (name, color) ->
-                                            // 默认蓝色模式只高亮蓝色；自定义模式高亮匹配种子色的那个
-                                            val isSelected = (effectiveColorMode == 1 && color == 0xFF415F91L) ||
+                                            // Default and custom selections reflect the color actually rendered.
+                                            val isSelected = (effectiveColorMode == 1 && color == 0xFFB65326L) ||
                                                 (effectiveColorMode == 2 && ThemeController.seedColor == color)
                                             ColorSelectionItem(
                                                 color = color,
@@ -435,7 +436,7 @@ fun ThemeScreen(
                                 horizontalArrangement = Arrangement.Center
                             ) {
                                 AppIconOption(
-                                    iconRes = R.drawable.icon,
+                                    iconRes = R.drawable.jiexi_mark,
                                     name = "解析图标",
                                     isSelected = true,
                                     onClick = { }

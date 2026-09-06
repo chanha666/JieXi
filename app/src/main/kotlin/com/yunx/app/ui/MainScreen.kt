@@ -23,6 +23,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.activity.compose.BackHandler
+import com.yunx.app.ui.screens.MineScreen
+import com.fuke.mobile.EmbeddedMediaResolver
+import com.fuke.mobile.EmbeddedMediaTools
+import com.fuke.mobile.EmbeddedMediaSettings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -139,8 +146,29 @@ import com.fuke.mobile.MediaActivity
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(sharedText: String = "", onSharedTextConsumed: () -> Unit = {}) {
+fun MainScreen(sharedText: String = "", initialDestination: String = "", onSharedTextConsumed: () -> Unit = {}) {
     var currentTab by rememberSaveable { mutableStateOf(MainTab.Resolve) }
+    var mediaLink by rememberSaveable { mutableStateOf<String?>(null) }
+    var mediaLinkToken by rememberSaveable { mutableStateOf(0L) }
+    var mediaPanel by rememberSaveable { mutableStateOf("") }
+    var preferMediaDownloads by rememberSaveable { mutableStateOf(false) }
+    val primaryTab = if (currentTab in MainTab.primary) currentTab else MainTab.Mine
+    val hasMediaPage = currentTab == MainTab.Resolve && mediaLink != null
+    val hasMediaPanel = currentTab == MainTab.Mine && mediaPanel.isNotEmpty()
+    BackHandler(enabled = hasMediaPage || hasMediaPanel || currentTab != MainTab.Resolve) {
+        when {
+            hasMediaPage -> mediaLink = null
+            hasMediaPanel -> mediaPanel = ""
+            currentTab !in MainTab.primary -> currentTab = MainTab.Mine
+            else -> currentTab = MainTab.Resolve
+        }
+    }
+    LaunchedEffect(initialDestination) {
+        if (initialDestination.startsWith("download-media:")) {
+            currentTab = MainTab.Download
+            preferMediaDownloads = true
+        }
+    }
     var showQuarkLogin by rememberSaveable { mutableStateOf(false) }
     var showUCLogin by rememberSaveable { mutableStateOf(false) }
     var showXunleiLogin by rememberSaveable { mutableStateOf(false) }
@@ -190,7 +218,7 @@ fun MainScreen(sharedText: String = "", onSharedTextConsumed: () -> Unit = {}) {
     val pan123Api = remember { Pan123Api() }
     val db = remember { AppDatabase.get(context) }
     val settings = remember { SettingsRepository(context) }
-    val tabAnimationMs = if (settings.reduceMotion) 0 else 200
+    val tabAnimationMs = if (settings.reduceMotion || (Build.VERSION.SDK_INT >= 26 && !android.animation.ValueAnimator.areAnimatorsEnabled())) 0 else 160
     val repository = remember {
         QuarkAccountRepository(db.quarkAccountDao(), api)
     }
@@ -407,7 +435,12 @@ fun MainScreen(sharedText: String = "", onSharedTextConsumed: () -> Unit = {}) {
             val link = com.jiexi.core.link.UnifiedLinkClassifier.classifyText(sharedText).firstOrNull()
             if (link?.kind == com.jiexi.core.link.LinkKind.CLOUD_SHARE) {
                 currentTab = MainTab.Resolve
+                mediaLink = null
                 resolveViewModel.startResolve(link.originalUrl, link.passcode)
+            } else {
+                currentTab = MainTab.Resolve
+                mediaLink = sharedText
+                mediaLinkToken = System.nanoTime()
             }
             onSharedTextConsumed()
         }
@@ -420,6 +453,7 @@ fun MainScreen(sharedText: String = "", onSharedTextConsumed: () -> Unit = {}) {
     // 解析页发起下载后，自动切换到「下载」Tab
     LaunchedEffect(resolveViewModel.downloadStarted) {
         if (resolveViewModel.downloadStarted) {
+            preferMediaDownloads = false
             currentTab = MainTab.Download
             resolveViewModel.consumeDownloadStarted()
         }
@@ -563,25 +597,28 @@ fun MainScreen(sharedText: String = "", onSharedTextConsumed: () -> Unit = {}) {
     Box(modifier = Modifier.fillMaxSize()) {
     // 顶部可折叠大标题（竖屏 / 横屏共用）
     val topBarContent: @Composable () -> Unit = {
-        LargeTopAppBar(
+        TopAppBar(
             title = {
                 Text(
-                    text = currentTab.title,
-                    style = MaterialTheme.typography.headlineMedium,
+                    text = when {
+                        hasMediaPanel && mediaPanel == "tools" -> "媒体小工具"
+                        hasMediaPanel && mediaPanel == "settings" -> "视频下载偏好"
+                        currentTab == MainTab.Resolve && mediaLink != null -> "视频解析"
+                        else -> currentTab.title
+                    },
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold
                 )
             },
-            actions = {
-                // 解析页标题右上角：收藏网盘链接入口
-                if (currentTab == MainTab.Resolve) {
-                    TextButton(onClick = {
-                        context.startActivity(Intent(context, MediaActivity::class.java))
-                    }) {
-                        Text("视频工具")
-                    }
-                    IconButton(onClick = { showBookmarks = true }) {
-                        Icon(Icons.Outlined.Bookmarks, contentDescription = "收藏网盘链接")
-                    }
+            navigationIcon = {
+                if (currentTab !in MainTab.primary || hasMediaPage || hasMediaPanel) {
+                    IconButton(onClick = {
+                        when {
+                            hasMediaPage -> mediaLink = null
+                            hasMediaPanel -> mediaPanel = ""
+                            else -> currentTab = MainTab.Mine
+                        }
+                    }) { Icon(Icons.Outlined.ArrowBack, "返回") }
                 }
             },
             scrollBehavior = scrollBehavior,
@@ -597,20 +634,30 @@ fun MainScreen(sharedText: String = "", onSharedTextConsumed: () -> Unit = {}) {
             targetState = currentTab,
             transitionSpec = {
                 // 根据 Tab 顺序决定滑动方向：向右切（新Tab在右边）→ 新页从右滑入；向左切反向
-                val forward = targetState.ordinal > initialState.ordinal
-                if (forward) {
-                    (fadeIn(tween(tabAnimationMs)) + slideInHorizontally(tween(tabAnimationMs)) { if (tabAnimationMs == 0) 0 else it / 4 })
-                        .togetherWith(fadeOut(tween(tabAnimationMs)) + slideOutHorizontally(tween(tabAnimationMs)) { if (tabAnimationMs == 0) 0 else -it / 4 })
-                } else {
-                    (fadeIn(tween(tabAnimationMs)) + slideInHorizontally(tween(tabAnimationMs)) { if (tabAnimationMs == 0) 0 else -it / 4 })
-                        .togetherWith(fadeOut(tween(tabAnimationMs)) + slideOutHorizontally(tween(tabAnimationMs)) { if (tabAnimationMs == 0) 0 else it / 4 })
-                }
+                fadeIn(tween(tabAnimationMs)).togetherWith(fadeOut(tween(tabAnimationMs)))
             },
             label = "mainTab"
         ) { tab ->
             saveableStateHolder.SaveableStateProvider(tab) {
                 when (tab) {
-                    MainTab.Resolve -> ResolveScreen(
+                    MainTab.Mine -> when (mediaPanel) {
+                        "tools" -> EmbeddedMediaTools()
+                        "settings" -> EmbeddedMediaSettings()
+                        else -> MineScreen(
+                            onNavigate = { currentTab = it },
+                            onBookmarks = { showBookmarks = true },
+                            onTools = { mediaPanel = "tools" },
+                            onMediaSettings = { mediaPanel = "settings" },
+                            onTheme = { showTheme = true },
+                            onSupport = { showSupport = true },
+                            onAbout = { showAbout = true }
+                        )
+                    }
+                    MainTab.Resolve -> if (mediaLink != null) EmbeddedMediaResolver(mediaLink.orEmpty(), mediaLinkToken) {
+                        preferMediaDownloads = true
+                        mediaLink = null
+                        currentTab = MainTab.Download
+                    } else ResolveScreen(
                         scrollBehavior,
                         resolveViewModel,
                         quarkCloudViewModel,
@@ -618,7 +665,10 @@ fun MainScreen(sharedText: String = "", onSharedTextConsumed: () -> Unit = {}) {
                         baiduCloudViewModel,
                         c139CloudViewModel,
                         ucCloudViewModel,
-                        pan123CloudViewModel
+                        pan123CloudViewModel,
+                        onMediaResolve = { text -> mediaLink = text; mediaLinkToken = System.nanoTime() },
+                        onDownloads = { preferMediaDownloads = false; currentTab = MainTab.Download },
+                        onAccounts = { currentTab = MainTab.Drive }
                     )
                     MainTab.Drive -> DriveScreen(
                         scrollBehavior = scrollBehavior,
@@ -649,7 +699,7 @@ fun MainScreen(sharedText: String = "", onSharedTextConsumed: () -> Unit = {}) {
                         onPan123Login = { showPan123Login = true },
                         onPan123Logout = { pan123ViewModel.logout() }
                     )
-                    MainTab.Download -> DownloadScreen(scrollBehavior, downloadViewModel)
+                    MainTab.Download -> DownloadScreen(scrollBehavior, downloadViewModel, initialMedia = preferMediaDownloads)
                     MainTab.Library -> LibraryScreen(scrollBehavior, historyViewModel) { savedLink ->
                         currentTab = MainTab.Resolve
                         resolveViewModel.startResolve(savedLink, null)
@@ -690,8 +740,8 @@ fun MainScreen(sharedText: String = "", onSharedTextConsumed: () -> Unit = {}) {
         ) {
             Row(modifier = Modifier.fillMaxSize()) {
                 MainNavigationRail(
-                    currentTab = currentTab,
-                    onTabSelected = { currentTab = it }
+                    currentTab = primaryTab,
+                    onTabSelected = { currentTab = it; mediaPanel = "" }
                 )
                 Column(
                     modifier = Modifier
@@ -722,8 +772,8 @@ fun MainScreen(sharedText: String = "", onSharedTextConsumed: () -> Unit = {}) {
             topBar = { topBarContent() },
             bottomBar = {
                 MainBottomBar(
-                    currentTab = currentTab,
-                    onTabSelected = { currentTab = it }
+                    currentTab = primaryTab,
+                    onTabSelected = { currentTab = it; mediaPanel = "" }
                 )
             }
         ) { innerPadding ->
@@ -740,8 +790,8 @@ fun MainScreen(sharedText: String = "", onSharedTextConsumed: () -> Unit = {}) {
     // 关于云析：叠加覆盖层（淡入 + 轻微缩放过渡）
     AnimatedVisibility(
         visible = showAbout,
-        enter = fadeIn(tween(220)) + scaleIn(tween(220), initialScale = 0.96f),
-        exit = fadeOut(tween(160)) + scaleOut(tween(160), targetScale = 0.96f),
+        enter = fadeIn(tween(tabAnimationMs)),
+        exit = fadeOut(tween(tabAnimationMs)),
         modifier = Modifier.fillMaxSize()
     ) {
         AboutScreen(
@@ -760,8 +810,8 @@ fun MainScreen(sharedText: String = "", onSharedTextConsumed: () -> Unit = {}) {
     // 支持开发：叠加覆盖层（淡入 + 轻微缩放过渡）
     AnimatedVisibility(
         visible = showSupport,
-        enter = fadeIn(tween(220)) + scaleIn(tween(220), initialScale = 0.96f),
-        exit = fadeOut(tween(160)) + scaleOut(tween(160), targetScale = 0.96f),
+        enter = fadeIn(tween(tabAnimationMs)),
+        exit = fadeOut(tween(tabAnimationMs)),
         modifier = Modifier.fillMaxSize()
     ) {
         SupportScreen(
@@ -772,8 +822,8 @@ fun MainScreen(sharedText: String = "", onSharedTextConsumed: () -> Unit = {}) {
     // 主题与外观：叠加覆盖层（淡入 + 轻微缩放过渡）
     AnimatedVisibility(
         visible = showTheme,
-        enter = fadeIn(tween(220)) + scaleIn(tween(220), initialScale = 0.96f),
-        exit = fadeOut(tween(160)) + scaleOut(tween(160), targetScale = 0.96f),
+        enter = fadeIn(tween(tabAnimationMs)),
+        exit = fadeOut(tween(tabAnimationMs)),
         modifier = Modifier.fillMaxSize()
     ) {
         ThemeScreen(
@@ -784,8 +834,8 @@ fun MainScreen(sharedText: String = "", onSharedTextConsumed: () -> Unit = {}) {
     // 收藏网盘链接：叠加覆盖层（淡入 + 轻微缩放过渡）
     AnimatedVisibility(
         visible = showBookmarks,
-        enter = fadeIn(tween(220)) + scaleIn(tween(220), initialScale = 0.96f),
-        exit = fadeOut(tween(160)) + scaleOut(tween(160), targetScale = 0.96f),
+        enter = fadeIn(tween(tabAnimationMs)),
+        exit = fadeOut(tween(tabAnimationMs)),
         modifier = Modifier.fillMaxSize()
     ) {
         BookmarkScreen(
@@ -875,7 +925,7 @@ private fun MainBottomBar(
     onTabSelected: (MainTab) -> Unit
 ) {
     NavigationBar {
-        MainTab.values().forEach { tab ->
+        MainTab.primary.forEach { tab ->
             NavigationBarItem(
                 selected = currentTab == tab,
                 onClick = { onTabSelected(tab) },
@@ -886,7 +936,7 @@ private fun MainBottomBar(
                     )
                 },
                 label = { Text(tab.title) },
-                alwaysShowLabel = false
+                alwaysShowLabel = true
             )
         }
     }
@@ -901,7 +951,7 @@ private fun MainNavigationRail(
     onTabSelected: (MainTab) -> Unit
 ) {
     NavigationRail {
-        MainTab.values().forEach { tab ->
+        MainTab.primary.forEach { tab ->
             NavigationRailItem(
                 selected = currentTab == tab,
                 onClick = { onTabSelected(tab) },
@@ -912,7 +962,7 @@ private fun MainNavigationRail(
                     )
                 },
                 label = { Text(tab.title) },
-                alwaysShowLabel = currentTab == tab
+                alwaysShowLabel = true
             )
         }
     }
