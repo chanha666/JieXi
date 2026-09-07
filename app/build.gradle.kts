@@ -32,7 +32,7 @@ android {
         buildConfigField("String", "UPDATE_PUBLIC_KEY", buildConfigString(releaseProperties.getProperty("updatePublicKeyBase64", "")))
         buildConfigField("String", "GITHUB_REPOSITORY_URL", buildConfigString(releaseProperties.getProperty("githubFeedbackUrl", "")))
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.fuke.mobile.MediaSmokeInstrumentation"
     }
 
     signingConfigs {
@@ -49,6 +49,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".qa"
+        }
         release {
             signingConfig = signingConfigs.findByName("release")
         }
@@ -98,6 +101,9 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation("io.github.junkfood02.youtubedl-android:library:0.18.1")
+    // The library exposes its configured mapper but declares Jackson runtime-only.
+    // Compile against that existing runtime; do not bundle a second JSON mapper.
+    compileOnly("com.fasterxml.jackson.core:jackson-databind:2.11.1")
     implementation("io.github.junkfood02.youtubedl-android:ffmpeg:0.18.1")
     implementation("io.github.junkfood02.youtubedl-android:aria2c:0.18.1")
     implementation("com.google.code.gson:gson:2.13.2")

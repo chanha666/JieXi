@@ -8,6 +8,17 @@ import java.io.File
 internal object MediaTaskArtifacts {
     data class CleanupResult(val deleted: Boolean, val bytesReleased: Long, val filesReleased: Int)
 
+    internal fun completedOutput(root: File, outputFormat: String): File {
+        val extensions = if (outputFormat == "mp3") setOf("mp3") else setOf("mp4", "webm", "mkv", "mov", "m4v")
+        val candidates = root.listFiles().orEmpty().filter {
+            it.isFile && it.length() > 0 && it.canonicalFile.parentFile == root.canonicalFile &&
+                it.extension.lowercase() in extensions &&
+                !Regex("\\.f[^.]+\\.(mp4|webm|mkv|mov|m4v|mp3)$", RegexOption.IGNORE_CASE).containsMatchIn(it.name)
+        }
+        require(candidates.size == 1) { "下载结束但未找到唯一有效成品，已保留任务文件，请重试。" }
+        return candidates.single()
+    }
+
     fun taskRoot(context: Context, taskId: String): File {
         val rootParent = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
             ?: File(context.filesDir, "downloads")

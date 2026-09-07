@@ -24,6 +24,17 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class DesktopMediaEngineTest {
+    @Test fun `quality presets never advertise a resolution above extracted formats`() {
+        assertFalse(DesktopMediaEngine.verifiedPresets(720).any { it.label.contains("4K") || it.label.contains("1080") })
+        assertTrue(DesktopMediaEngine.verifiedPresets(2160).any { it.selector.contains("height<=2160") })
+        assertTrue(DesktopMediaEngine.verifiedPresets(4320).first().label.contains("4320p"))
+    }
+    @Test fun `youtube cannot pretend analysis succeeded without a working extractor`() = withTemporaryDirectory { directory ->
+        val missing = DesktopMediaEngine.ToolPaths.locateFrom(propertyRoot = directory.toString(), workingDirectory = directory.toFile())
+        assertFailsWith<IllegalArgumentException> {
+            DesktopMediaEngine(tools = missing).analyze("https://www.youtube.com/watch?v=JXZ_CUfTweo")
+        }
+    }
     @Test
     fun `explicit media engine property is the first complete candidate`() = withTemporaryDirectory { directory ->
         val configured = directory.resolve("configured").toFile()
@@ -371,6 +382,7 @@ class DesktopMediaEngineTest {
             assertEquals(0, process.exitValue(), output.get(5, TimeUnit.SECONDS))
             val downloaded = workspace.listFiles().orEmpty().single { it.extension.equals("mp4", true) }
             assertContentEquals(content, downloaded.readBytes())
+            assertTrue(output.get(5, TimeUnit.SECONDS).contains("[progress]"), "Real yt-dlp must emit progress despite --print")
             val reported = output.get(5, TimeUnit.SECONDS).lineSequence()
                 .first { it.startsWith("[finished]") }.removePrefix("[finished]").trim()
             assertEquals(downloaded.absolutePath, reported)

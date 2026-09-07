@@ -36,6 +36,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import com.jiexi.core.media.MediaTransferWatchdog
+import com.jiexi.core.media.TransferLiveness
 
 class DownloadService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -211,7 +213,6 @@ class DownloadService : Service() {
 
     private fun runTask(task: DownloadTask) {
         currentId = task.id
-        stopMode = ""
         TaskStore.update(task.id) {
             it.copy(
                 status = TaskStatus.RUNNING,
@@ -252,13 +253,17 @@ class DownloadService : Service() {
             addOption("--no-mtime")
             addOption("--continue")
             addOption("--newline")
+            addOption("--progress")
+            addOption("--encoding", "utf-8")
+            addOption("--ignore-config")
             addOption("--no-playlist")
             addOption("--retries", settings.retries)
             addOption("--fragment-retries", settings.retries)
             addOption("--retry-sleep", "exp=1:20")
-            addOption("--socket-timeout", 60)
+            addOption("--socket-timeout", 15)
+            addOption("--extractor-retries", 1)
             addOption("--concurrent-fragments", 8)
-            if (freshResolvedUrl.isBlank()) {
+            if (freshResolvedUrl.isBlank() && task.platform != "YouTube") {
                 addOption("--downloader", "libaria2c.so")
                 addOption("--downloader-args", "aria2c:-x8 -s8 -k1M --file-allocation=none --summary-interval=1")
             }
@@ -288,13 +293,17 @@ class DownloadService : Service() {
                 }
             }
         }
+        var watchdog: MediaTransferWatchdog? = null
         try {
+            if (stopMode.isNotBlank()) throw IOException("download stopped")
             val resultFile = if (freshResolvedUrl.isNotBlank() && task.outputFormat != "mp3") {
                 downloadDirect(task, freshResolvedUrl, root, outputTemplate)
             } else {
                 var lastUiUpdate = 0L
                 var lastPercent = -1
+                watchdog = MediaTransferWatchdog(root) { YoutubeDL.getInstance().destroyProcessById(task.id) }
                 YoutubeDL.getInstance().execute(request, task.id) { progress, eta, line ->
+                    watchdog?.observe(line)
                     ensureTransferAllowed()
                     val linePercent = Regex("(\\d+(?:\\.\\d+)?)%").find(line)?.groupValues?.getOrNull(1)?.toDoubleOrNull()?.toInt()
                     val percent = maxOf(progress.toInt(), linePercent ?: 0).coerceIn(0, 100)
@@ -303,8 +312,8 @@ class DownloadService : Service() {
                     if (percent != lastPercent || now - lastUiUpdate >= 350L) {
                         TaskStore.update(task.id) {
                             it.copy(
-                                progress = percent,
-                                stage = if (percent > 0) "正在下载" else "正在获取媒体流",
+                                progress = percent.coerceAtMost(99),
+                                stage = TransferLiveness.stage(line) ?: if (percent > 0) "正在下载" else "正在获取媒体流",
                                 eta = if (eta > 0) "${eta}s" else "",
                                 speed = speed
                             )
@@ -314,9 +323,11 @@ class DownloadService : Service() {
                         lastUiUpdate = now
                     }
                 }
-                root.walkTopDown().filter { it.isFile && !it.name.endsWith(".part") && !it.name.endsWith(".ytdl") }.maxByOrNull { it.lastModified() }
-                    ?: error("下载结束但没有找到成品文件")
+                watchdog?.close()
+                check(watchdog?.timedOut != true) { MediaTransferWatchdog.TIMEOUT_MESSAGE }
+                MediaTaskArtifacts.completedOutput(root, task.outputFormat)
             }
+            if (stopMode.isNotBlank()) throw IOException("download stopped")
             val completedFileName = resultFile.name
             TaskStore.update(task.id) {
                 it.copy(
@@ -353,10 +364,11 @@ class DownloadService : Service() {
                     MediaTaskArtifacts.cleanup(this, task.id)
                     removalRequested.remove(task.id)
                 }
-                else -> TaskStore.update(task.id) { it.copy(status = TaskStatus.FAILED, stage = "失败", speed = "", error = cleanError(error)) }
+                else -> TaskStore.update(task.id) { it.copy(status = TaskStatus.FAILED, stage = "失败", speed = "", error = if (watchdog?.timedOut == true) MediaTransferWatchdog.TIMEOUT_MESSAGE else cleanError(error)) }
             }
             if (error is CancellationException) throw error
         } finally {
+            watchdog?.close()
             // Covers a remove click that arrived after the transfer committed
             // but before currentId was cleared: the record/artifacts must still go.
             if (removalRequested.remove(task.id)) {

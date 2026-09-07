@@ -11,6 +11,8 @@ internal object MediaErrorMessages {
             .mapNotNull { it.message?.trim()?.takeIf(String::isNotBlank) }
             .joinToString(" | ")
         return when {
+            matches(text, "video is unavailable|video unavailable|private video|video has been removed") ->
+                "当前视频不可用，可能已删除、设为私有或受到访问限制。"
             matches(text, """DRM|encrypted|\bKID\b|encryption key""") ->
                 "检测到加密媒体流，匿名模式无法导出。"
             matches(text, "login|cookie|sign[ -]?in|会员|登录") ->

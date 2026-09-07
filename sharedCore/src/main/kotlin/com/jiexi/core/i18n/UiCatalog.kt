@@ -3,6 +3,13 @@ package com.jiexi.core.i18n
 /** Shared, offline UI catalog. Keys are explicit Chinese source templates. */
 internal object UiCatalog {
     val english = mapOf(
+        "正在合并或转换媒体" to "Merging or converting media",
+        "连接失败，正在重试" to "Connection failed, retrying",
+        "正在获取 YouTube 媒体信息" to "Retrieving YouTube media information",
+        "正在连接媒体服务器" to "Connecting to the media server",
+        "画质上限 4K" to "Quality limit: 4K",
+        "自动选择开放格式" to "Automatically select an available format",
+        "媒体任务长时间没有数据进展，已停止等待并保留断点。请检查网络或代理后重试。" to "No data progress for an extended period. Stopped waiting and kept partial files. Check your network or proxy and retry.",
         "退出并安装" to "Exit and install",
         "原始文件 · 无转码" to "Original file · No transcoding",
         "公开最高画质（源站提供时可到 8K）" to "Best public quality (up to 8K when available)",
@@ -735,6 +742,13 @@ internal object UiCatalog {
         "预览与选择画质" to "Preview and choose quality"
     )
     val traditional = mapOf(
+        "正在合并或转换媒体" to "正在合併或轉換媒體",
+        "连接失败，正在重试" to "連線失敗，正在重試",
+        "正在获取 YouTube 媒体信息" to "正在取得 YouTube 媒體資訊",
+        "正在连接媒体服务器" to "正在連線媒體伺服器",
+        "画质上限 4K" to "畫質上限 4K",
+        "自动选择开放格式" to "自動選擇開放格式",
+        "媒体任务长时间没有数据进展，已停止等待并保留断点。请检查网络或代理后重试。" to "媒體任務長時間沒有資料進展，已停止等待並保留斷點。請檢查網路或代理後重試。",
         "退出并安装" to "退出並安裝",
         "原始文件 · 无转码" to "原始檔案 · 無轉碼",
         "公开最高画质（源站提供时可到 8K）" to "公開最高畫質（來源提供時可到 8K）",

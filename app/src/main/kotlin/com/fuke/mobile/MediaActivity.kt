@@ -716,9 +716,6 @@ private fun analyzeVideo(context: android.content.Context, url: String): VideoPr
     if (DirectMedia.isVideo(url)) {
         return finish(DirectMedia.analyze(url))
     }
-    if (platform == "YouTube") {
-        return finish(YouTubeFallback.analyze(url))
-    }
     if (platform == "哔哩哔哩") {
         return finish(BilibiliPublicFallback.analyze(url))
     }
@@ -737,6 +734,7 @@ private fun analyzeVideo(context: android.content.Context, url: String): VideoPr
         addOption("--no-check-formats")
         addOption("--no-warnings")
         addOption("--retries", 0)
+        addOption("--extractor-retries", 1)
         addOption("--socket-timeout", 12)
         addOption("--force-ipv4")
         if (platform == "哔哩哔哩") {
@@ -745,7 +743,10 @@ private fun analyzeVideo(context: android.content.Context, url: String): VideoPr
         }
         if (platform == "X") addOption("--extractor-args", "twitter:api=syndication")
     }
-    val info: VideoInfo = YoutubeDL.getInstance().getInfo(request)
+    val info: VideoInfo = Engine.getInfoBounded(request)
+    require(info.formats.orEmpty().any {
+        it.url?.isNotBlank() == true && (it.vcodec?.let { codec -> codec != "none" } == true || it.acodec?.let { codec -> codec != "none" } == true)
+    }) { "当前链接没有找到可下载的开放格式。" }
     val detailed = info.formats.orEmpty()
         .filter { it.height > 0 && !it.vcodec.equals("none", true) }
         .sortedWith(compareByDescending<com.yausername.youtubedl_android.mapper.VideoFormat> { it.height }.thenByDescending { it.fps }.thenByDescending { it.fileSize.takeIf { size -> size > 0 } ?: it.fileSizeApproximate })
@@ -764,12 +765,20 @@ private fun analyzeVideo(context: android.content.Context, url: String): VideoPr
             val selector = if (format.acodec.equals("none", true)) "$formatId+bestaudio/best" else formatId
             FormatChoice(selector, label, size)
         }
-    val formats = listOf(defaultChoice("best"), defaultChoice("1080"), defaultChoice("720"), defaultChoice("audio")) + detailed
+    val maxHeight = info.formats.orEmpty().maxOfOrNull { it.height } ?: 0
+    val formats = buildList {
+        add(defaultChoice("best").copy(label = if (maxHeight > 0) "自动最高画质 · 已识别 ${maxHeight}p" else "自动选择开放格式"))
+        if (maxHeight >= 2160) add(FormatChoice("bestvideo[height<=2160]+bestaudio/best[height<=2160]", "画质上限 4K"))
+        if (maxHeight >= 1080) add(defaultChoice("1080"))
+        if (maxHeight >= 720) add(defaultChoice("720"))
+        add(defaultChoice("audio"))
+        addAll(detailed)
+    }
     return finish(VideoPreview(
         url = url,
         title = info.title ?: info.fulltitle ?: "未命名视频",
         uploader = info.uploader.orEmpty(),
-        platform = if (detectPlatform(url) == "X") "X" else info.extractorKey ?: detectPlatform(url),
+        platform = platform,
         durationSeconds = info.duration,
         thumbnail = info.thumbnail.orEmpty(),
         formats = formats

@@ -4,6 +4,10 @@ import com.jiexi.core.link.ClassifiedLink
 import com.jiexi.core.link.LinkKind
 import com.jiexi.core.link.LinkPlatform
 import com.jiexi.core.link.UnifiedLinkClassifier
+import com.yunx.app.data.network.NetworkProxyConfig
+import com.yunx.desktop.update.DesktopUpdateProxySelector
+import java.net.Proxy
+import java.net.InetSocketAddress
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
@@ -20,7 +24,8 @@ class DesktopMediaEngine(
     val tools: ToolPaths = ToolPaths.locate(),
     private val xApiBaseUrl: String = FXTWITTER_API_BASE_URL,
     private val douyinJingxuanBaseUrl: String = DOUYIN_JINGXUAN_BASE_URL,
-    private val bilibiliApiBaseUrl: String = BILIBILI_API_BASE_URL
+    private val bilibiliApiBaseUrl: String = BILIBILI_API_BASE_URL,
+    private val proxyConfig: () -> NetworkProxyConfig = { NetworkProxyConfig() }
 ) {
     data class ToolPaths(
         val root: File,
@@ -99,7 +104,8 @@ class DesktopMediaEngine(
         }
     }
 
-    private val http = OkHttpClient.Builder()
+    private val http get() = OkHttpClient.Builder()
+        .proxySelector(DesktopUpdateProxySelector(proxyConfig()))
         .connectTimeout(8, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .followRedirects(true)
@@ -114,7 +120,7 @@ class DesktopMediaEngine(
         val fast = when (classified.kind) {
             LinkKind.DIRECT_MEDIA -> analyzeDirect(classified)
             else -> when (classified.platform) {
-                LinkPlatform.YOUTUBE -> analyzeYouTube(classified)
+                LinkPlatform.YOUTUBE -> analyzeWithYtDlp(classified)
                 LinkPlatform.BILIBILI -> analyzeBilibili(classified)
                 LinkPlatform.DOUYIN -> runCatching { analyzeDouyin(classified) }.getOrNull()
                 LinkPlatform.X -> runCatching { analyzeX(classified) }.getOrNull()
@@ -157,6 +163,8 @@ class DesktopMediaEngine(
             "--ignore-config",
             "--encoding", "utf-8",
             "--newline",
+            "--progress",
+            "--no-quiet",
             "--color", "never",
             "--continue",
             "--no-playlist",
@@ -169,7 +177,8 @@ class DesktopMediaEngine(
             "--retries", retries.coerceIn(0,10).toString(),
             "--fragment-retries", retries.coerceIn(0,10).toString(),
             "--retry-sleep", "exp=1:20",
-            "--socket-timeout", "60",
+            "--socket-timeout", "15",
+            "--extractor-retries", "1",
             "--concurrent-fragments", concurrentFragments.coerceIn(1, 64).toString(),
             "--ffmpeg-location", tools.ffmpegDirectory.absolutePath,
             "--js-runtimes", "deno:${tools.deno.absolutePath}"
@@ -244,36 +253,6 @@ class DesktopMediaEngine(
             platform = "媒体直链",
             formats = defaultFormats(direct = true),
             engine = "直链即时识别"
-        )
-    }
-
-    private fun analyzeYouTube(link: ClassifiedLink): DesktopMediaPreview {
-        val uri = URI(link.normalizedUrl)
-        val id = when {
-            uri.host.equals("youtu.be", true) -> uri.path.trim('/').substringBefore('/')
-            uri.path.trim('/').substringBefore('/') in setOf("shorts", "embed", "live") -> uri.path.trim('/').split('/').getOrNull(1).orEmpty()
-            else -> uri.rawQuery.orEmpty().split('&').firstOrNull { it.startsWith("v=") }?.substringAfter('=').orEmpty()
-        }
-        require(id.matches(Regex("[A-Za-z0-9_-]{6,15}"))) { "没有检测到有效的 YouTube 视频编号。" }
-        var title = "YouTube 视频 $id"
-        var uploader = ""
-        var thumbnail = "https://i.ytimg.com/vi/$id/hqdefault.jpg"
-        runCatching {
-            val endpoint = "https://www.youtube.com/oembed?url=${java.net.URLEncoder.encode(link.originalUrl, StandardCharsets.UTF_8)}&format=json"
-            val json = fetchJson(endpoint, 2_000)
-            title = json.optString("title", title)
-            uploader = json.optString("author_name")
-            thumbnail = json.optString("thumbnail_url", thumbnail)
-        }
-        return DesktopMediaPreview(
-            sourceUrl = link.originalUrl,
-            title = title,
-            uploader = uploader,
-            platform = link.platform.label,
-            thumbnailUrl = thumbnail,
-            formats = defaultFormats(),
-            engine = "YouTube 轻量解析",
-            warning = link.warning
         )
     }
 
@@ -551,9 +530,10 @@ class DesktopMediaEngine(
     private fun analyzeWithYtDlp(link: ClassifiedLink): DesktopMediaPreview {
         require(tools.ready) { "媒体核心不完整，请重新安装解析。" }
         val args = mutableListOf(
+            "--ignore-config",
+            "--encoding", "utf-8",
             "--no-playlist",
             "--dump-single-json",
-            "--no-warnings",
             "--socket-timeout", "15",
             "--extractor-retries", "1",
             "--retries", "1",
@@ -568,7 +548,13 @@ class DesktopMediaEngine(
             else -> Unit
         }
         args += link.originalUrl
-        val json = JSONObject(runAndCollect(tools.ytDlp, args, 90))
+        val output = runAndCollect(tools.ytDlp, args, 90)
+        // stderr warnings share the pipe; they must not corrupt successful JSON.
+        val json = JSONObject(output.lineSequence().lastOrNull { it.trimStart().startsWith("{\"") }
+            ?: error("媒体核心没有返回有效的视频信息。"))
+        require(json.optJSONArray("formats")?.objects().orEmpty().any {
+            it.optString("url").isNotBlank() && (it.optString("vcodec", "none") != "none" || it.optString("acodec", "none") != "none")
+        }) { "当前链接没有找到可下载的开放格式。" }
         val detailed = json.optJSONArray("formats")?.objects().orEmpty()
             .filter { it.optInt("height") > 0 && !it.optString("vcodec").equals("none", true) }
             .sortedWith(compareByDescending<JSONObject> { it.optInt("height") }.thenByDescending { it.optDouble("fps") })
@@ -596,7 +582,7 @@ class DesktopMediaEngine(
             platform = link.platform.label,
             durationSeconds = json.optDouble("duration", 0.0).roundToInt(),
             thumbnailUrl = json.optString("thumbnail"),
-            formats = (defaultFormats() + detailed).distinctBy { it.selector },
+            formats = (verifiedPresets(json.optJSONArray("formats")?.objects().orEmpty().maxOfOrNull { it.optInt("height") } ?: 0) + detailed).distinctBy { it.selector },
             engine = "yt-dlp 通用引擎",
             warning = link.warning
         )
@@ -618,20 +604,37 @@ class DesktopMediaEngine(
         val outputFuture = reader.submit<String> { process.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() } }
         try {
             if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
+                val children = process.descendants().toList()
+                children.forEach { it.destroy() }
                 process.destroy()
                 if (!process.waitFor(2, TimeUnit.SECONDS)) process.destroyForcibly()
+                children.filter { it.isAlive }.forEach { it.destroyForcibly() }
                 error("组件响应超时，请检查网络后重试。")
             }
             val output = outputFuture.get(5, TimeUnit.SECONDS).trim()
             if (process.exitValue() != 0) error(cleanToolError(output))
             return output
         } finally {
+            if (process.isAlive) {
+                process.descendants().forEach { it.destroyForcibly() }
+                process.destroyForcibly()
+            }
             reader.shutdownNow()
         }
     }
 
     private fun processBuilder(executable: File, arguments: List<String>): ProcessBuilder {
-        val builder = ProcessBuilder(listOf(executable.absolutePath) + arguments)
+        val source = arguments.lastOrNull { it.startsWith("https://") || it.startsWith("http://") }
+        val proxyArgs = if (executable == tools.ytDlp && source != null) {
+            val proxy = DesktopUpdateProxySelector(proxyConfig()).select(URI(source)).first()
+            val address = proxy.address() as? InetSocketAddress
+            if (proxy.type() == Proxy.Type.DIRECT || address == null) listOf("--proxy=") else {
+                val scheme = if (proxy.type() == Proxy.Type.SOCKS) "socks5h" else "http"
+                val host = address.hostString.let { if (':' in it) "[$it]" else it }
+                listOf("--proxy", "$scheme://$host:${address.port}")
+            }
+        } else emptyList()
+        val builder = ProcessBuilder(listOf(executable.absolutePath) + arguments + proxyArgs)
             .directory(executable.parentFile)
             .redirectErrorStream(true)
         val path = listOf(tools.root.absolutePath, tools.ffmpegDirectory.absolutePath, builder.environment()["PATH"].orEmpty())
@@ -652,6 +655,12 @@ class DesktopMediaEngine(
     }
 
     companion object {
+        internal fun verifiedPresets(maxHeight: Int): List<MediaFormatChoice> = defaultFormats().filter { choice ->
+            val cap = Regex("height<=(\\d+)").find(choice.selector)?.groupValues?.get(1)?.toInt()
+            cap == null || cap <= maxHeight
+        }.mapIndexed { index, choice ->
+            if (index == 0 && maxHeight > 0) choice.copy(label = "自动最高画质 · 已识别 ${maxHeight}p") else choice
+        }
         private const val FXTWITTER_API_BASE_URL = "https://api.fxtwitter.com"
         private const val DOUYIN_JINGXUAN_BASE_URL = "https://jingxuan.douyin.com"
         private const val BILIBILI_API_BASE_URL = "https://api.bilibili.com"
@@ -702,6 +711,8 @@ class DesktopMediaEngine(
         fun cleanToolError(output: String): String {
             val text = output.lineSequence().filter(String::isNotBlank).toList().takeLast(20).joinToString("\n")
             return when {
+                Regex("video is unavailable|video unavailable|private video|video has been removed", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
+                    "当前视频不可用，可能已删除、设为私有或受到访问限制。"
                 Regex("(?:HTTP Error 404|HTTP[^\\n]*\\b404\\b|status code 404)", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
                     "链接指向的资源不存在或已经失效（HTTP 404）。"
                 Regex("(?:HTTP Error 429|HTTP[^\\n]*\\b429\\b|too many requests|rate.?limit)", RegexOption.IGNORE_CASE).containsMatchIn(text) ->

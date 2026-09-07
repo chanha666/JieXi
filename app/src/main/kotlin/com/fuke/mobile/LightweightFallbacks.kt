@@ -18,35 +18,6 @@ private fun standardFormats() = listOf(
 object YouTubeFallback {
     private val idPattern = Regex("^[A-Za-z0-9_-]{6,15}$")
 
-    fun analyze(url: String): VideoPreview {
-        val id = extractVideoId(url) ?: error("没有检测到有效的 YouTube 视频编号。")
-        val fallback = VideoPreview(
-            url = url,
-            title = "YouTube 视频 $id",
-            uploader = "",
-            platform = "YouTube",
-            durationSeconds = 0,
-            thumbnail = "https://i.ytimg.com/vi/$id/hqdefault.jpg",
-            formats = standardFormats()
-        )
-        return runCatching {
-            val encoded = URLEncoder.encode(url, Charsets.UTF_8.name())
-            val connection = URI("https://www.youtube.com/oembed?url=$encoded&format=json").toURL()
-                .openConnection() as HttpURLConnection
-            connection.connectTimeout = 1_200
-            connection.readTimeout = 1_200
-            connection.setRequestProperty("User-Agent", MOBILE_USER_AGENT)
-            connection.inputStream.bufferedReader().use { reader ->
-                val json = JsonParser.parseReader(reader).asJsonObject
-                fallback.copy(
-                    title = json.get("title")?.asString ?: fallback.title,
-                    uploader = json.get("author_name")?.asString.orEmpty(),
-                    thumbnail = json.get("thumbnail_url")?.asString ?: fallback.thumbnail
-                )
-            }
-        }.getOrDefault(fallback)
-    }
-
     internal fun extractVideoId(url: String): String? {
         val uri = runCatching { URI(url) }.getOrNull() ?: return null
         val host = uri.host.orEmpty().lowercase()

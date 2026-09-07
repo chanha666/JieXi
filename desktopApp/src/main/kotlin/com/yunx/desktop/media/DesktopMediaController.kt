@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.jiexi.core.link.LinkKind
+import com.jiexi.core.media.MediaTransferWatchdog
+import com.jiexi.core.media.TransferLiveness
 import com.jiexi.core.link.UnifiedLinkClassifier
 import com.sun.jna.platform.win32.Crypt32Util
 import com.yunx.desktop.core.DesktopDataPaths
@@ -31,8 +33,9 @@ import kotlin.math.roundToInt
 
 class DesktopMediaController(
     private val settings: DesktopSettings,
-    val engine: DesktopMediaEngine = DesktopMediaEngine(),
-    private val storeFile: File = DesktopDataPaths.mediaTasksFile()
+    val engine: DesktopMediaEngine = DesktopMediaEngine(proxyConfig = { settings.networkProxyConfig() }),
+    private val storeFile: File = DesktopDataPaths.mediaTasksFile(),
+    private val idleTimeoutMillis: Long = 120_000
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val processing = AtomicBoolean(false)
@@ -78,15 +81,18 @@ class DesktopMediaController(
         analyzing = true
         analysisError = null
         preview = null
+        val requestedInput = inputText
         scope.launch {
-            runCatching { engine.analyze(inputText) }
+            runCatching { engine.analyze(requestedInput) }
                 .onSuccess { value -> withContext(Dispatchers.Swing) {
-                    preview = value
-                    selectedFormat = preferredFormat(value.formats)
+                    if (inputText == requestedInput) {
+                        preview = value
+                        selectedFormat = preferredFormat(value.formats)
+                    }
                     analyzing = false
                 } }
                 .onFailure { error -> withContext(Dispatchers.Swing) {
-                    analysisError = friendlyError(error)
+                    if (inputText == requestedInput) analysisError = friendlyError(error)
                     analyzing = false
                 } }
         }
@@ -232,7 +238,7 @@ class DesktopMediaController(
 
     fun resumeAll() {
         tasks.filter { it.state in setOf(MediaTaskState.PAUSED, MediaTaskState.INTERRUPTED, MediaTaskState.FAILED) }
-            .forEach { it.state = MediaTaskState.WAITING; it.stage = "等待中"; it.error = null }
+            .forEach { it.state = MediaTaskState.WAITING; it.stage = "等待中" }
         persist()
         schedule()
     }
@@ -323,6 +329,7 @@ class DesktopMediaController(
         val lines = ArrayDeque<String>()
         var finishedPath = ""
         var process: Process? = null
+        var watchdog: MediaTransferWatchdog? = null
         var deleteWorkspaceAfterExit = false
         val workDirectory = DesktopMediaWorkspace.taskDirectory(downloadRoot, task.id)
         try {
@@ -341,10 +348,18 @@ class DesktopMediaController(
             if (recovered == null) {
                 process = engine.startDownload(task, workDirectory, settings.threadCount.coerceIn(1, 64), settings.retryLimit, settings.mediaNameRule, settings.speedLimitBytes)
                 processes[task.id] = process
+                val running = process
+                watchdog = MediaTransferWatchdog(workDirectory, idleTimeoutMillis) { terminateProcess(running) }
                 if (requestedActions.containsKey(task.id) || removals.isRemoved(task.id)) terminateProcess(process)
                 process.inputStream.bufferedReader(Charsets.UTF_8).useLines { output ->
                     output.forEach { raw ->
                         val line = raw.trim()
+                        watchdog?.observe(line)
+                        TransferLiveness.stage(line)?.let { stage ->
+                            javax.swing.SwingUtilities.invokeLater {
+                                if (!requestedActions.containsKey(task.id) && task.state == MediaTaskState.DOWNLOADING) task.stage = stage
+                            }
+                        }
                         if (line.isNotBlank()) {
                             if (lines.size >= 80) lines.removeFirst()
                             lines.addLast(line)
@@ -371,6 +386,8 @@ class DesktopMediaController(
                 }
             }
             val exitCode = process?.waitFor() ?: 0
+            watchdog?.close()
+            if (watchdog?.timedOut == true) error(MediaTransferWatchdog.TIMEOUT_MESSAGE)
             val action = requestedActions.remove(task.id)
             deleteWorkspaceAfterExit = removals.isRemoved(task.id)
             val workspaceOutput = if (action == null && exitCode == 0 && !deleteWorkspaceAfterExit) {
@@ -448,6 +465,8 @@ class DesktopMediaController(
                 persist()
             }
         } finally {
+            watchdog?.close()
+            process?.takeIf { it.isAlive }?.let(::terminateProcess)
             process?.let { processes.remove(task.id, it) }
             requestedActions.remove(task.id)
             if (removals.isRemoved(task.id)) deleteWorkspaceAfterExit = true
@@ -470,12 +489,11 @@ class DesktopMediaController(
     }
 
     private fun terminateProcess(process: Process) {
-        runCatching { process.descendants().forEach { it.destroy() } }
+        val children = runCatching { process.descendants().toList() }.getOrDefault(emptyList())
+        children.forEach { runCatching { it.destroy() } }
         process.destroy()
-        if (!process.waitFor(2, TimeUnit.SECONDS)) {
-            runCatching { process.descendants().forEach { it.destroyForcibly() } }
-            process.destroyForcibly()
-        }
+        if (!process.waitFor(2, TimeUnit.SECONDS)) process.destroyForcibly()
+        children.filter { it.isAlive }.forEach { runCatching { it.destroyForcibly() } }
     }
 
     private fun uniqueOutput(baseName: String, extension: String): File {

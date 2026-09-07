@@ -23,9 +23,11 @@ $assets = foreach ($name in $assetNames) {
     }
 }
 
+$notesFile = Join-Path $PSScriptRoot "../RELEASE-$Version.md"
+$releaseNotes = if (Test-Path -LiteralPath $notesFile -PathType Leaf) { Get-Content -LiteralPath $notesFile -Raw -Encoding UTF8 } else { "解析 $Version / JieXi $Version" }
 $payloadObject = [ordered]@{
     tag_name = "v$Version"
-    body = "解析 ${Version}：统一版本号，修复重复提示更新；更新支持系统/软件代理、下载进度、断点续传和退出安装，兼容 Windows 短路径。`nJieXi ${Version}: unified versioning, proxy-aware resumable updates, progress reporting, exit-to-install and Windows short-path compatibility."
+    body = $releaseNotes
     published_at = [DateTimeOffset]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
     assets = @($assets)
 }

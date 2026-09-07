@@ -17,7 +17,12 @@ import kotlin.test.assertTrue
 
 class DesktopMediaRecoveryTest {
     @Test
-    fun `retry recovers a verified existing video without any source request`() {
+    fun `retry recovers a verified existing video without any source request`() = verifyRecovery(false)
+
+    @Test
+    fun `retry all also recovers a verified existing video without any source request`() = verifyRecovery(true)
+
+    private fun verifyRecovery(retryAll: Boolean) {
         val engine = DesktopMediaEngine()
         assumeTrue("Windows bundled toolchain required", engine.tools.ready)
         val base = File("D:/CodexCache/JieXi/recovery-tests").apply { mkdirs() }
@@ -41,7 +46,7 @@ class DesktopMediaRecoveryTest {
             val instance = DesktopMediaController(settings, engine, File(directory, "isolated-state.json"))
             controller = instance
             instance.onTaskNotification = { _, _ -> done.countDown() }
-            SwingUtilities.invokeAndWait { instance.tasks.add(task); instance.resume(task) }
+            SwingUtilities.invokeAndWait { instance.tasks.add(task); if (retryAll) instance.resumeAll() else instance.resume(task) }
             assertTrue(done.await(20, TimeUnit.SECONDS), "Recovery timed out")
             SwingUtilities.invokeAndWait {
                 assertEquals(MediaTaskState.COMPLETED, task.state, task.error)

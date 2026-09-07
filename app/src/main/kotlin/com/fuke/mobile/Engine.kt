@@ -7,6 +7,10 @@ import com.yausername.youtubedl_android.YoutubeDL
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
+import com.jiexi.core.media.MediaTransferWatchdog
+import com.yausername.youtubedl_android.YoutubeDLRequest
+import com.yausername.youtubedl_android.mapper.VideoInfo
+import java.util.UUID
 
 object Engine {
     private const val BUNDLED_YTDLP_VERSION = "2026.08.30.232658"
@@ -43,6 +47,24 @@ object Engine {
     }
 
     fun isReady(): Boolean = ready
+
+    fun getInfoBounded(request: YoutubeDLRequest): VideoInfo {
+        request.addOption("--dump-single-json")
+        request.addOption("--ignore-config")
+        request.addOption("--encoding", "utf-8")
+        val processId = "analysis-${UUID.randomUUID()}"
+        val core = YoutubeDL.getInstance()
+        return MediaTransferWatchdog(null, 90_000) { core.destroyProcessById(processId) }.use { watchdog ->
+            try {
+                val response = core.execute(request, processId)
+                check(!watchdog.timedOut) { "视频解析超时，请检查网络或代理后重试。" }
+                core.objectMapper.readValue(response.out, VideoInfo::class.java)
+            } catch (error: Exception) {
+                if (watchdog.timedOut) error("视频解析超时，请检查网络或代理后重试。")
+                throw error
+            }
+        }
+    }
 
     private fun installBundledCore(context: Context) {
         val directory = File(context.noBackupFilesDir, "youtubedl-android/yt-dlp")
