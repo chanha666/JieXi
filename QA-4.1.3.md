@@ -59,4 +59,4 @@ adb -s DEVICE_SERIAL shell am instrument -w com.yunx.app.qa.test/com.fuke.mobile
 
 ## 发布策略
 
-4.1.3 为本地修复候选包，不自动发布 GitHub 或改变公开稳定版。上述核心测试已通过，仍需区分实体手机、UI/下载服务全流程及其他平台的未测范围。
+4.1.3 经用户确认发布 GitHub 并更新签名在线更新清单。上述核心测试已通过，仍需区分实体手机、UI/下载服务全流程及其他平台的未测范围。发布授权不代表未测项目已经通过。

@@ -1,4 +1,4 @@
-# 解析 4.1.3 — 媒体任务修复候选版
+# 解析 4.1.3 — 媒体任务修复版
 
 ## 修复
 
@@ -19,8 +19,8 @@
 - Android API 35 模拟器核心实测通过：7482 字节样本逐字节一致、9 次回调；用户 YouTube 视频解析出 2160p，低流量画质完整下载并合并为 17,167,085 字节，3908 次回调。未登录，测试使用电脑现有代理。实体手机及 UI/下载服务全流程尚未验收。
 - 其他网盘/视频平台不代表已逐个平台完成真实账号和完整下载复测。不得把上述结果宣传为“所有平台都已正常”。
 
-本候选版不自动发布或替换公开稳定版更新清单。
+经用户确认发布到 GitHub，并更新签名在线更新清单。上述未测范围仍然保留。
 
 ## English
 
-Media reliability candidate: real YouTube format extraction, visible progress, bounded stalled transfers, proxy consistency on Windows, safer Android output selection and cancellation handling. Windows and Android API 35 emulator core checks passed, including a complete low-bandwidth YouTube download. Physical-device and full UI/service workflow validation remain pending. This is not a claim that every platform or every quality has been fully tested.
+Media reliability release: real YouTube format extraction, visible progress, bounded stalled transfers, proxy consistency on Windows, safer Android output selection and cancellation handling. Windows and Android API 35 emulator core checks passed, including a complete low-bandwidth YouTube download. Physical-device and full UI/service workflow validation remain pending. This is not a claim that every platform or every quality has been fully tested.
