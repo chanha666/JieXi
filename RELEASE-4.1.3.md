@@ -16,11 +16,11 @@
 - 同一视频使用低流量格式完成 17,167,137 字节下载，ffprobe 确认有视频和音频两个流，下载进度正常。
 - 同一视频的 4K 选项实际传入 261,120 字节后主动停止测试；这不是整部 4K 下载验收，也不是速度保证。
 - Windows 源站无响应、暂停/取消、已完成文件恢复以及 Android 成品筛选有独立回归测试。
-- Android APK 和专用 `.qa` 设备测试包可构建。实体手机未连接；本机模拟器自动启动被执行环境拦截，设备运行验收尚未完成。
+- Android API 35 模拟器核心实测通过：7482 字节样本逐字节一致、9 次回调；用户 YouTube 视频解析出 2160p，低流量画质完整下载并合并为 17,167,085 字节，3908 次回调。未登录，测试使用电脑现有代理。实体手机及 UI/下载服务全流程尚未验收。
 - 其他网盘/视频平台不代表已逐个平台完成真实账号和完整下载复测。不得把上述结果宣传为“所有平台都已正常”。
 
-本候选版暂不替换公开稳定版更新清单；Android 设备验证完成后再决定是否转为正式发布。
+本候选版不自动发布或替换公开稳定版更新清单。
 
 ## English
 
-Media reliability candidate: real YouTube format extraction, visible progress, bounded stalled transfers, proxy consistency on Windows, safer Android output selection and cancellation handling. Windows real-video checks passed at the explicitly documented levels; Android device validation is pending. This is not a claim that every platform or every quality has been fully tested.
+Media reliability candidate: real YouTube format extraction, visible progress, bounded stalled transfers, proxy consistency on Windows, safer Android output selection and cancellation handling. Windows and Android API 35 emulator core checks passed, including a complete low-bandwidth YouTube download. Physical-device and full UI/service workflow validation remain pending. This is not a claim that every platform or every quality has been fully tested.

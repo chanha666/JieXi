@@ -37,14 +37,14 @@ class MediaSmokeInstrumentation : Instrumentation() {
             Engine.initializeDownloadTools(targetContext)
             val url = "http://127.0.0.1:${server.localPort}/sample.mp4"
             val info = Engine.getInfoBounded(YoutubeDLRequest(url).apply {
-                addOption("--no-playlist"); addOption("--skip-download"); addOption("--proxy", "")
+                addOption("--no-playlist"); addOption("--skip-download"); addOption("--proxy=")
             })
             check(!info.title.isNullOrBlank()) { "Metadata is empty" }
             results.putString("metadata", "PASS: bounded extractor and real JSON mapper")
             val progress = AtomicInteger()
             val request = YoutubeDLRequest(url).apply {
                 addOption("--no-playlist"); addOption("--progress"); addOption("--newline")
-                addOption("--socket-timeout", 10); addOption("--retries", 0); addOption("--proxy", "")
+                addOption("--socket-timeout", 10); addOption("--retries", 0); addOption("--proxy=")
                 addOption("-o", File(root, "sample.mp4").absolutePath)
             }
             YoutubeDL.getInstance().execute(request, "media-smoke-download") { _, _, _ -> progress.incrementAndGet() }
@@ -56,9 +56,36 @@ class MediaSmokeInstrumentation : Instrumentation() {
                 val live = Engine.getInfoBounded(YoutubeDLRequest("https://www.youtube.com/watch?v=JXZ_CUfTweo").apply {
                     addOption("--skip-download"); addOption("--no-playlist"); addOption("--socket-timeout", 12)
                     addOption("--extractor-retries", 0); addOption("--retries", 0)
+                    arguments.getString("proxy")?.takeIf { it.isNotBlank() }?.let { addOption("--proxy", it) }
                 })
                 check(live.formats.orEmpty().any { it.height > 0 }) { "No real YouTube formats" }
                 results.putString("youtube", "PASS: ${live.title}; height=${live.formats.orEmpty().maxOfOrNull { it.height }}")
+                if (arguments.getString("download") == "1") {
+                    val liveRoot = File(root, "youtube").apply { mkdirs() }
+                    val liveProgress = AtomicInteger()
+                    val downloadRequest = YoutubeDLRequest("https://www.youtube.com/watch?v=JXZ_CUfTweo").apply {
+                        addOption("--no-playlist"); addOption("--progress"); addOption("--newline")
+                        addOption("--socket-timeout", 12); addOption("--retries", 1)
+                        addOption("--concurrent-fragments", 8)
+                        addOption("--extractor-retries", 0)
+                        addOption("-f", "worstvideo[ext=mp4]+worstaudio/worst")
+                        addOption("--merge-output-format", "mp4")
+                        addOption("-o", File(liveRoot, "video.%(ext)s").absolutePath)
+                        arguments.getString("proxy")?.takeIf { it.isNotBlank() }?.let { addOption("--proxy", it) }
+                    }
+                    val core = YoutubeDL.getInstance()
+                    com.jiexi.core.media.MediaTransferWatchdog(liveRoot, 120_000) {
+                        core.destroyProcessById("media-smoke-live")
+                    }.use { watchdog ->
+                        core.execute(downloadRequest, "media-smoke-live") { _, _, line ->
+                            liveProgress.incrementAndGet(); watchdog.observe(line)
+                        }
+                        check(!watchdog.timedOut) { "Live download stalled" }
+                    }
+                    val completed = MediaTaskArtifacts.completedOutput(liveRoot, "mp4")
+                    check(completed.length() > 1_000_000 && liveProgress.get() > 0)
+                    results.putString("youtubeDownload", "PASS: ${completed.length()} bytes; ${liveProgress.get()} callbacks; merged output")
+                }
             }
             results.putString("stream", "MEDIA_SMOKE_OK\n$results")
             finish(Activity.RESULT_OK, results)
