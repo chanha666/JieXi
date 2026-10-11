@@ -717,10 +717,10 @@ private fun analyzeVideo(context: android.content.Context, url: String): VideoPr
         return finish(DirectMedia.analyze(url))
     }
     if (platform == "哔哩哔哩") {
-        return finish(BilibiliPublicFallback.analyze(url))
+        runCatching { BilibiliPublicFallback.analyze(url) }.getOrNull()?.let { return finish(it) }
     }
     if (platform == "抖音") {
-        return finish(DouyinFallback.analyze(url))
+        runCatching { DouyinFallback.analyze(url) }.getOrNull()?.let { return finish(it) }
     }
     if (platform == "X") {
         runCatching { XFallback.analyze(url) }.getOrNull()?.let {

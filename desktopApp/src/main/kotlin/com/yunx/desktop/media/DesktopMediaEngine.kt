@@ -238,7 +238,7 @@ class DesktopMediaEngine(
 
     fun updateYtDlp(): String {
         require(tools.ytDlp.isFile) { "yt-dlp 核心不存在。" }
-        return runAndCollect(tools.ytDlp, listOf("-U", "--update-to", "stable"), 240)
+        return runAndCollect(tools.ytDlp, listOf("--update-to", "nightly"), 240)
     }
 
     private fun analyzeDirect(link: ClassifiedLink): DesktopMediaPreview {
@@ -711,6 +711,8 @@ class DesktopMediaEngine(
         fun cleanToolError(output: String): String {
             val text = output.lineSequence().filter(String::isNotBlank).toList().takeLast(20).joinToString("\n")
             return when {
+                Regex("confirm.*not a bot|confirm.*not.*bot|bot detection|automated requests", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
+                    "源站触发了机器人验证。请稍后重试或检查网络出口；更新核心不一定能解除验证，这不是视频已删除。"
                 Regex("video is unavailable|video unavailable|private video|video has been removed", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
                     "当前视频不可用，可能已删除、设为私有或受到访问限制。"
                 Regex("(?:HTTP Error 404|HTTP[^\\n]*\\b404\\b|status code 404)", RegexOption.IGNORE_CASE).containsMatchIn(text) ->

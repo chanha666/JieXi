@@ -24,6 +24,9 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class DesktopMediaEngineTest {
+    @Test fun `bot challenges are reported separately from unavailable media`() {
+        assertTrue(DesktopMediaEngine.cleanToolError("ERROR: Sign in to confirm you’re not a bot. Use --cookies").contains("机器人验证"))
+    }
     @Test fun `quality presets never advertise a resolution above extracted formats`() {
         assertFalse(DesktopMediaEngine.verifiedPresets(720).any { it.label.contains("4K") || it.label.contains("1080") })
         assertTrue(DesktopMediaEngine.verifiedPresets(2160).any { it.selector.contains("height<=2160") })
@@ -332,7 +335,7 @@ class DesktopMediaEngineTest {
             DesktopMediaEngine.cleanToolError("ERROR: This video is DRM protected")
         )
         assertEquals(
-            "源站没有向匿名访问提供该资源。",
+            "源站触发了机器人验证。请稍后重试或检查网络出口；更新核心不一定能解除验证，这不是视频已删除。",
             DesktopMediaEngine.cleanToolError("ERROR: Sign in to confirm you are not a bot")
         )
         assertNotEquals(

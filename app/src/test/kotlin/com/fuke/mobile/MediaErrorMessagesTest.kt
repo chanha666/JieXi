@@ -6,6 +6,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MediaErrorMessagesTest {
+    @Test fun `bot challenges are not mislabeled as private videos`() {
+        val message = MediaErrorMessages.forAction(IllegalStateException("Sign in to confirm you’re not a bot. Use --cookies"))
+        assertTrue(message.contains("机器人验证"))
+        assertFalse(message.contains("没有向匿名访问"))
+    }
     @Test
     fun `maps common network failures to actionable messages`() {
         assertTrue(MediaErrorMessages.forAction(IllegalStateException("Unable to resolve host example.com: No address associated with hostname")).contains("域名解析失败"))

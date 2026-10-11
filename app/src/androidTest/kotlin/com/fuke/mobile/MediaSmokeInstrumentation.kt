@@ -52,6 +52,30 @@ class MediaSmokeInstrumentation : Instrumentation() {
             check(actual.readBytes().contentEquals(sample)) { "Downloaded bytes differ" }
             check(progress.get() > 0) { "No progress callbacks" }
             results.putString("download", "PASS: ${actual.length()} bytes, ${progress.get()} callbacks")
+            if (arguments.getString("public") == "1") {
+                val preview = DouyinFallback.analyze("https://www.douyin.com/video/7646342441319408036")
+                check(preview.downloadUrl.startsWith("https://"))
+                val publicRoot = File(root, "douyin").apply { mkdirs() }
+                val callbacks = AtomicInteger()
+                val publicRequest = YoutubeDLRequest(preview.downloadUrl).apply {
+                    addOption("--no-playlist"); addOption("--progress"); addOption("--newline")
+                    addOption("--socket-timeout", 12); addOption("--retries", 0)
+                    addOption("--referer", "https://www.douyin.com/")
+                    addOption("-o", File(publicRoot, "video.%(ext)s").absolutePath)
+                }
+                val core = YoutubeDL.getInstance()
+                com.jiexi.core.media.MediaTransferWatchdog(publicRoot, 90_000) {
+                    core.destroyProcessById("media-smoke-public")
+                }.use { watchdog ->
+                    core.execute(publicRequest, "media-smoke-public") { _, _, line ->
+                        callbacks.incrementAndGet(); watchdog.observe(line)
+                    }
+                    check(!watchdog.timedOut) { "Public transfer stalled" }
+                }
+                val completed = MediaTaskArtifacts.completedOutput(publicRoot, "mp4")
+                check(completed.length() > 1_000 && callbacks.get() > 0)
+                results.putString("douyin", "PASS: ${preview.title}; ${completed.length()} bytes; ${callbacks.get()} callbacks")
+            }
             if (arguments.getString("live") == "1") {
                 val live = Engine.getInfoBounded(YoutubeDLRequest("https://www.youtube.com/watch?v=JXZ_CUfTweo").apply {
                     addOption("--skip-download"); addOption("--no-playlist"); addOption("--socket-timeout", 12)

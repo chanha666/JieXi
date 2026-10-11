@@ -8,12 +8,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
 import com.jiexi.core.media.MediaTransferWatchdog
+import com.jiexi.core.media.MediaCoreVersion
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import com.yausername.youtubedl_android.mapper.VideoInfo
 import java.util.UUID
 
 object Engine {
-    private const val BUNDLED_YTDLP_VERSION = "2026.08.30.232658"
+    private const val BUNDLED_YTDLP_VERSION = "2026.10.10.233141"
     private val _state = MutableStateFlow("正在准备下载核心")
     val state: StateFlow<String> = _state
 
@@ -70,7 +71,10 @@ object Engine {
         val directory = File(context.noBackupFilesDir, "youtubedl-android/yt-dlp")
         val binary = File(directory, "yt-dlp")
         val preferences = context.getSharedPreferences("jiexi_media_engine", Context.MODE_PRIVATE)
-        if (preferences.getString("bundled_version", "") != BUNDLED_YTDLP_VERSION || !binary.exists()) {
+        val installedVersion = runCatching { YoutubeDL.getInstance().versionName(context) }.getOrNull()
+        val bundledAlreadyInstalled = preferences.getString("bundled_version", "") == BUNDLED_YTDLP_VERSION
+        if (!binary.isFile || binary.length() == 0L ||
+            (!bundledAlreadyInstalled && MediaCoreVersion.shouldInstallBundled(installedVersion, BUNDLED_YTDLP_VERSION))) {
             directory.mkdirs()
             val temporary = File(directory, "yt-dlp.new")
             context.assets.open("yt-dlp-$BUNDLED_YTDLP_VERSION").use { input ->

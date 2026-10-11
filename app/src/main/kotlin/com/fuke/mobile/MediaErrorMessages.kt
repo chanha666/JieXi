@@ -11,6 +11,8 @@ internal object MediaErrorMessages {
             .mapNotNull { it.message?.trim()?.takeIf(String::isNotBlank) }
             .joinToString(" | ")
         return when {
+            matches(text, "confirm.*not a bot|confirm.*not.*bot|bot detection|automated requests") ->
+                "源站触发了机器人验证。请稍后重试或检查网络出口；更新核心不一定能解除验证，这不是视频已删除。"
             matches(text, "video is unavailable|video unavailable|private video|video has been removed") ->
                 "当前视频不可用，可能已删除、设为私有或受到访问限制。"
             matches(text, """DRM|encrypted|\bKID\b|encryption key""") ->

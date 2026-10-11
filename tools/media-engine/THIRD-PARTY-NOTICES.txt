@@ -3,8 +3,8 @@
 
 本文件覆盖 Windows 发布包中直接捆绑的媒体组件。Gradle/Maven 依赖与 Android 媒体组件记录在同目录 SBOM.spdx.json 中。
 
-1. yt-dlp 2026.08.19
-   Source: https://github.com/yt-dlp/yt-dlp/releases/tag/2026.08.19
+1. yt-dlp nightly 2026.10.10.233141
+   Source: https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/tag/2026.10.10.233141
    License: Unlicense
    License text: licenses/yt-dlp-LICENSE.txt
    Bundled dependency notices: licenses/yt-dlp-THIRD_PARTY_LICENSES.txt
