@@ -43,4 +43,14 @@ Windows 公共抖音样本 7646342441319408036 完整下载，成品检查 video
 
 最初两项抖音模拟服务器用例仍按旧请求顺序返回数据，与新增“精选优先”路径不一致；已更新夹具并回归通过。测试还暴露 controller 测试后台协程未停止就删除 Preferences 节点的问题；新增可注入协程域，并在用例清理前取消等待。
 
-最终发行签名、lint 及文件校验结果在打包完成后补记。
+## 正式发行门禁
+
+- 从干净提交 `7c5fc4753a70243edc2e06ce9bfc87e38867caae` / 标签 `v4.1.5` 构建，版本 4.1.5 / Android code 46。
+- BuildRelease.ps1 全流程成功；正式门禁再次通过 222 项自动测试、7 项显式跳过。
+- Android lint：0 errors、97 warnings、18 hints；不是零警告。
+- Android APK：RSA 4096 位，v2/v3 签名有效，与 4.1.4 同一发行证书。证书 SHA-256：`efca75197d508261f0f09e620ee6ebd706ecb2b7d30cc430679c24fbbef9cdd4`。
+- Windows 安装迁移助手 12 项通过；MSI 升级数据保护审计通过。Windows EXE 未做 Authenticode 签名。
+- 使用应用配置中的公钥验证更新清单 RSA/SHA-256 签名，并核对三个成品 SHA-256；BUILD-INFO 源码提交与标签一致。
+- 成品位于 D:/CodexBuilds/JieXi/4.1.5/release，Windows 安装版 236443136 字节，绿色版 227761180 字节，Android 238588863 字节。
+- GitHub CI / CodeQL 在打包完成时仍运行，不能将本地通过等同于云端检查完成。
+- GitHub 五个附件全部 uploaded，远端大小及 GitHub SHA-256 digest 与本地逐一一致；公开 latest Release 为 v4.1.5。签名更新清单随后的元数据提交使用 skip-ci，避免仅更新清单与验收记录就重复打包；源码提交的 CI / CodeQL 继续运行。
