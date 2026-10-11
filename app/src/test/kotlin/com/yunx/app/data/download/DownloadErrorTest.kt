@@ -15,6 +15,12 @@ class DownloadErrorTest {
         assertEquals("NETWORK_RETRYABLE", failure.code)
     }
 
+    @Test fun networkErrorsWithCookieOrNumericFileNamesDoNotDemandRelogin() {
+        assertEquals("NETWORK_RETRYABLE", DownloadErrorClassifier.classify(
+            IllegalStateException("HTTP 503 cookie read timeout https://cdn.example/video?token=401")).code)
+        assertNotEquals("AUTH_EXPIRED", DownloadErrorClassifier.classify(IllegalStateException("1401338.mp4 failed")).code)
+    }
+
     @Test fun updateIntegrityFailuresAreNeverRetriedOrInstalled() {
         val failure = DownloadErrorClassifier.classify(IllegalStateException("更新包 SHA-256 安全校验失败"))
         assertEquals("UPDATE_INTEGRITY_FAILED", failure.code)

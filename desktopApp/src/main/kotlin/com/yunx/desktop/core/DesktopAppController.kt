@@ -108,9 +108,9 @@ class DesktopAppController(
     val credentialStore: CredentialStore = CredentialStore(),
     val settings: DesktopSettings = DesktopSettings(),
     private val stateStore: DesktopStateStore = DesktopStateStore(),
-    private val mediaStoreFile: File = DesktopDataPaths.mediaTasksFile()
+    private val mediaStoreFile: File = DesktopDataPaths.mediaTasksFile(),
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val configuredNetwork = HttpClients.configure(settings.networkProxyConfig())
     private val resolver = DesktopResolver(credentialStore)
     private val downloader = DesktopDownloader()
@@ -643,11 +643,11 @@ class DesktopAppController(
     companion object { val APP_VERSION: String get() = DesktopBuildInfo.version }
 }
 
-private object DesktopFailureClassifier {
+internal object DesktopFailureClassifier {
     fun classify(error: Throwable): Pair<String, Boolean> {
         val value = generateSequence(error) { it.cause }.mapNotNull(Throwable::message).joinToString(" ").lowercase()
         return when {
-            "401" in value || "登录" in value || "cookie" in value -> "AUTH_EXPIRED" to false
+            com.jiexi.core.media.CloudAccessFailurePolicy.isAuthenticationFailure(value) -> "AUTH_EXPIRED" to false
             "提取码" in value || "password" in value -> "PASSCODE_REQUIRED" to false
             "403" in value || "直链" in value -> "DIRECT_LINK_EXPIRED" to true
             "429" in value || "503" in value || "timeout" in value || "reset" in value -> "NETWORK_RETRYABLE" to true

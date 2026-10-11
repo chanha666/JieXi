@@ -16,7 +16,8 @@ object DownloadErrorClassifier {
             "sha-256" in message || "安全校验" in message || "更新包名" in message ||
                 "更新版本" in message || "发行签名" in message || "android 安装包" in message ||
                 "apk 身份" in message -> DownloadFailure("UPDATE_INTEGRITY_FAILED", DownloadStage.UPDATE_APP, false, "重新检查更新")
-            "401" in message || "登录" in message || "cookie" in message -> DownloadFailure("AUTH_EXPIRED", DownloadStage.AUTH_CHECK, false, "重新登录当前网盘")
+            com.jiexi.core.media.CloudAccessFailurePolicy.isAuthenticationFailure(message) ->
+                DownloadFailure("AUTH_EXPIRED", DownloadStage.AUTH_CHECK, false, "重新登录当前网盘")
             "提取码" in message || "password" in message -> DownloadFailure("PASSCODE_REQUIRED", DownloadStage.PARSE_LINK, false, "检查提取码后重试")
             "空间" in message || "no space" in message -> DownloadFailure("DISK_FULL", DownloadStage.WRITE_STORAGE, false, "释放磁盘空间或更换目录")
             "403" in message || "直链" in message -> DownloadFailure("DIRECT_LINK_EXPIRED", DownloadStage.GET_DIRECT_LINK, true, "重新获取直链")

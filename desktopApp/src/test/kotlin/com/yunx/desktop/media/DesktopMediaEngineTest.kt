@@ -172,11 +172,27 @@ class DesktopMediaEngineTest {
             assertEquals(refreshedUrl, engine.resolveFreshDownloadUrl(task))
 
             server.enqueue(MockResponse().setResponseCode(503))
-            assertEquals(previewUrl, engine.resolveFreshDownloadUrl(task))
+            assertEquals("", engine.resolveFreshDownloadUrl(task))
             assertEquals(5, server.requestCount)
         } finally {
             server.shutdown()
         }
+    }
+
+    @Test fun `Douyin numeric links need only one public page request`() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            val model = JSONObject().put("video_list", JSONArray().put(
+                douyinStream("https://cdn.example/video.mp4", "1080p", 1080, 1920, 1_000_000, "h264", "mp4")
+            ))
+            server.enqueue(MockResponse().setBody(jingxuanHtml(model, modelAsString = true)))
+            val engine = DesktopMediaEngine(douyinJingxuanBaseUrl = server.url("/official").toString())
+            val result = engine.analyzeDouyin(douyinLink("https://www.douyin.com/video/7646342441319408036"))
+            assertEquals("https://cdn.example/video.mp4", result.downloadUrl)
+            assertEquals("/official/m/video/7646342441319408036", server.takeRequest(2, TimeUnit.SECONDS)?.path)
+            assertEquals(1, server.requestCount)
+        } finally { server.shutdown() }
     }
 
     @Test
@@ -248,7 +264,6 @@ class DesktopMediaEngineTest {
         val videoId = "7646342441319408036"
         val selectedUrl = server.url("/media/2160-h265.mp4?mime_type=video_mp4").toString()
         try {
-            server.enqueue(MockResponse().setResponseCode(200).setBody("<html>no legacy data</html>"))
             val model = JSONObject()
                 .put("video_duration", 42.6)
                 .put(
@@ -298,8 +313,8 @@ class DesktopMediaEngineTest {
         server.start()
         val videoId = "7646342441319408036"
         try {
-            server.enqueue(MockResponse().setResponseCode(200).setBody("<html>no legacy data</html>"))
             server.enqueue(MockResponse().setResponseCode(200).setBody("<html>missing SSR assignment</html>"))
+            server.enqueue(MockResponse().setResponseCode(200).setBody("<html>no legacy data</html>"))
             val source = server.url("/video/$videoId").toString()
             val engine = DesktopMediaEngine(
                 douyinJingxuanBaseUrl = server.url("/official").toString()

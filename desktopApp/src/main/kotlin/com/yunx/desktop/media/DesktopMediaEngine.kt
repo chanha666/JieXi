@@ -4,6 +4,7 @@ import com.jiexi.core.link.ClassifiedLink
 import com.jiexi.core.link.LinkKind
 import com.jiexi.core.link.LinkPlatform
 import com.jiexi.core.link.UnifiedLinkClassifier
+import com.jiexi.core.media.MediaSourcePolicy
 import com.yunx.app.data.network.NetworkProxyConfig
 import com.yunx.desktop.update.DesktopUpdateProxySelector
 import java.net.Proxy
@@ -217,13 +218,12 @@ class DesktopMediaEngine(
     }
 
     internal fun resolveFreshDownloadUrl(task: DesktopMediaTask): String {
-        if (task.platform !in setOf("哔哩哔哩", "抖音", "X", "X / Twitter")) return task.downloadUrl
-        return runCatching {
+        return MediaSourcePolicy.resolve(task.platform, task.downloadUrl) {
             when (task.platform) {
                 "哔哩哔哩" -> DesktopBilibiliFallback(apiRoot = bilibiliApiBaseUrl).analyze(task.sourceUrl).downloadUrl
                 else -> analyze(task.sourceUrl).downloadUrl
             }
-        }.getOrNull().orEmpty().ifBlank { task.downloadUrl }
+        }
     }
 
     fun runFfmpeg(arguments: List<String>, timeoutSeconds: Long = 3600): String {
@@ -295,6 +295,11 @@ class DesktopMediaEngine(
     }
 
     internal fun analyzeDouyin(link: ClassifiedLink): DesktopMediaPreview {
+        var featuredFailure: Throwable? = null
+        extractDouyinVideoId(link.originalUrl, link.normalizedUrl)?.let { id ->
+            runCatching { analyzeDouyinJingxuan(link, id) }.onSuccess { return it }
+                .onFailure { featuredFailure = it }
+        }
         var resolvedUrl = link.normalizedUrl
         var legacyFailure: Throwable? = null
         runCatching {
@@ -304,6 +309,8 @@ class DesktopMediaEngine(
             parseDouyinSharePage(link, page.html)
         }.onSuccess { return it }
             .onFailure { legacyFailure = it }
+
+        featuredFailure?.let { throw IllegalStateException(it.message ?: "抖音精选公开页暂不可用。", it) }
 
         val videoId = extractDouyinVideoId(link.originalUrl, link.normalizedUrl, resolvedUrl)
             ?: throw IllegalStateException(

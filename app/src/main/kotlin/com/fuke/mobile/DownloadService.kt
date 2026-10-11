@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import com.jiexi.core.media.MediaTransferWatchdog
 import com.jiexi.core.media.TransferLiveness
+import com.jiexi.core.media.MediaSourcePolicy
 
 class DownloadService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -164,12 +165,6 @@ class DownloadService : Service() {
                         currentId = null
                         break
                     }
-                    val usesFastDirectDownload =
-                        (task.platform in setOf("抖音", "X") || task.resolvedUrl.isNotBlank()) && task.outputFormat != "mp3"
-                    // Direct public files do not need Python, yt-dlp, FFmpeg or
-                    // aria2. Skipping their extraction removes several seconds
-                    // from startup and avoids wasting hundreds of MB of I/O.
-                    if (!usesFastDirectDownload) Engine.initializeDownloadTools(applicationContext)
                     runTask(task)
                 }
             } catch (_: CancellationException) {
@@ -242,63 +237,69 @@ class DownloadService : Service() {
         val outputTemplate = if (task.platform in setOf("抖音", "X", "哔哩哔哩", "直链视频")) {
             MediaTaskPolicy.directOutputTemplate(task.title)
         } else template
-        val freshResolvedUrl = when (task.platform) {
-            "抖音" -> runCatching { DouyinFallback.analyze(task.url).downloadUrl }.getOrDefault(task.resolvedUrl.orEmpty())
-            "X" -> runCatching { XFallback.analyze(task.url).downloadUrl }.getOrDefault(task.resolvedUrl.orEmpty())
-            "哔哩哔哩" -> runCatching { BilibiliPublicFallback.analyze(task.url).downloadUrl }
-                .getOrDefault(task.resolvedUrl.orEmpty())
-            else -> task.resolvedUrl.orEmpty()
-        }
-        val request = YoutubeDLRequest(freshResolvedUrl.ifBlank { task.url }).apply {
-            addOption("--no-mtime")
-            addOption("--continue")
-            addOption("--newline")
-            addOption("--progress")
-            addOption("--encoding", "utf-8")
-            addOption("--ignore-config")
-            addOption("--no-playlist")
-            addOption("--retries", settings.retries)
-            addOption("--fragment-retries", settings.retries)
-            addOption("--retry-sleep", "exp=1:20")
-            addOption("--socket-timeout", 15)
-            addOption("--extractor-retries", 1)
-            addOption("--concurrent-fragments", 8)
-            if (freshResolvedUrl.isBlank() && task.platform != "YouTube") {
-                addOption("--downloader", "libaria2c.so")
-                addOption("--downloader-args", "aria2c:-x8 -s8 -k1M --file-allocation=none --summary-interval=1")
-            }
-            addOption("-f", task.formatSelector)
-            if (task.platform == "抖音") {
-                addOption("--referer", "https://www.douyin.com/")
-                addOption("--user-agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124.0 Mobile Safari/537.36")
-            }
-            if (task.platform == "哔哩哔哩") {
-                addOption("--referer", "https://www.bilibili.com/")
-                addOption("--user-agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124.0 Mobile Safari/537.36")
-            }
-            if (task.platform == "X") addOption("--extractor-args", "twitter:api=syndication")
-            if (task.platform == "X") addOption("--force-ipv4")
-            addOption("-o", File(root, outputTemplate).absolutePath)
-            if (task.outputFormat == "mp3") {
-                addOption("-x")
-                addOption("--audio-format", "mp3")
-                addOption("--audio-quality", "0")
-            } else {
-                addOption("--merge-output-format", "mp4")
-                if (task.embedSubtitles) {
-                    addOption("--write-subs")
-                    addOption("--write-auto-subs")
-                    addOption("--sub-langs", "zh.*,en.*")
-                    addOption("--embed-subs")
-                }
-            }
-        }
         var watchdog: MediaTransferWatchdog? = null
         try {
+            val freshResolvedUrl = MediaSourcePolicy.resolve(task.platform, task.resolvedUrl) {
+                ensureTransferAllowed()
+                TaskStore.update(task.id) { it.copy(stage = "正在刷新下载地址") }
+                when (task.platform) {
+                    "抖音" -> DouyinFallback.analyze(task.url).downloadUrl
+                    "X" -> XFallback.analyze(task.url).downloadUrl
+                    "哔哩哔哩" -> BilibiliPublicFallback.analyze(task.url).downloadUrl
+                    else -> task.resolvedUrl
+                }
+            }
+            val request = YoutubeDLRequest(freshResolvedUrl.ifBlank { task.url }).apply {
+                addOption("--no-mtime")
+                addOption("--continue")
+                addOption("--newline")
+                addOption("--progress")
+                addOption("--encoding", "utf-8")
+                addOption("--ignore-config")
+                addOption("--no-playlist")
+                addOption("--retries", settings.retries)
+                addOption("--fragment-retries", settings.retries)
+                addOption("--retry-sleep", "exp=1:20")
+                addOption("--socket-timeout", 15)
+                addOption("--extractor-retries", 1)
+                addOption("--concurrent-fragments", 8)
+                if (freshResolvedUrl.isBlank() && task.platform != "YouTube") {
+                    addOption("--downloader", "libaria2c.so")
+                    addOption("--downloader-args", "aria2c:-x8 -s8 -k1M --file-allocation=none --summary-interval=1")
+                }
+                addOption("-f", task.formatSelector)
+                if (task.platform == "抖音") {
+                    addOption("--referer", "https://www.douyin.com/")
+                    addOption("--user-agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124.0 Mobile Safari/537.36")
+                }
+                if (task.platform == "哔哩哔哩") {
+                    addOption("--referer", "https://www.bilibili.com/")
+                    addOption("--user-agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124.0 Mobile Safari/537.36")
+                }
+                if (task.platform == "X") addOption("--extractor-args", "twitter:api=syndication")
+                if (task.platform == "X") addOption("--force-ipv4")
+                addOption("-o", File(root, outputTemplate).absolutePath)
+                if (task.outputFormat == "mp3") {
+                    addOption("-x")
+                    addOption("--audio-format", "mp3")
+                    addOption("--audio-quality", "0")
+                } else {
+                    addOption("--merge-output-format", "mp4")
+                    if (task.embedSubtitles) {
+                        addOption("--write-subs")
+                        addOption("--write-auto-subs")
+                        addOption("--sub-langs", "zh.*,en.*")
+                        addOption("--embed-subs")
+                    }
+                }
+            }
             if (stopMode.isNotBlank()) throw IOException("download stopped")
-            val resultFile = if (freshResolvedUrl.isNotBlank() && task.outputFormat != "mp3") {
+            val resultFile = if (MediaSourcePolicy.useDirectTransfer(freshResolvedUrl, task.outputFormat, task.embedSubtitles)) {
                 downloadDirect(task, freshResolvedUrl, root, outputTemplate)
             } else {
+                TaskStore.update(task.id) { it.copy(stage = "正在准备媒体核心") }
+                Engine.initializeDownloadTools(applicationContext)
+                ensureTransferAllowed()
                 var lastUiUpdate = 0L
                 var lastPercent = -1
                 watchdog = MediaTransferWatchdog(root) { YoutubeDL.getInstance().destroyProcessById(task.id) }
@@ -387,10 +388,38 @@ class DownloadService : Service() {
         }.getOrNull() ?: "mp4"
         val target = File(root, outputTemplate.replace("%(ext)s", sourceExtension))
         val partial = File(root, "${target.name}.part")
+        val totalFromRange = probeDirectWithRetry(task, url)
+        if (totalFromRange != null && totalFromRange >= SEGMENT_THRESHOLD_BYTES) {
+            try {
+                return downloadDirectSegmented(task, url, root, target, partial, totalFromRange)
+            } catch (error: java.util.concurrent.ExecutionException) {
+                if (error.cause !is RangeUnsupportedException) throw error
+                ensureTransferAllowed()
+                TaskStore.update(task.id) { it.copy(stage = "服务器不支持分段，正在切换单连接", speed = "") }
+            }
+        }
+        return downloadDirectSingle(task, url, target, partial)
+    }
+
+    private fun probeDirectWithRetry(task: DownloadTask, url: String): Long? {
+        val maxAttempts = DirectDownloadRetryPolicy.maxAttempts(AppPrefs.read(this).retries)
+        var attempt = 1
+        while (true) {
+            try {
+                return probeDirect(task, url)
+            } catch (error: Throwable) {
+                if (!DirectDownloadRetryPolicy.shouldRetry(error, attempt, maxAttempts, stopMode.isNotBlank())) throw error
+                publishDirectRetry(task, attempt, maxAttempts)
+                Thread.sleep(DirectDownloadRetryPolicy.backoffMillis(attempt++))
+            }
+        }
+    }
+
+    private fun probeDirect(task: DownloadTask, url: String): Long? {
         val probe = openDownloadConnection(task, url, "bytes=0-0")
-        val totalFromRange = try {
+        return try {
             val status = probe.responseCode
-            if (status !in 200..299) throw IOException("视频文件请求失败（HTTP $status）。")
+            DirectResponsePolicy.validate(status, probe.contentType)
             val total = if (status == HttpURLConnection.HTTP_PARTIAL) {
                 ContentRangePolicy.parse(probe.getHeaderField("Content-Range"))
                     ?.takeIf { it.start == 0L && it.end == 0L }
@@ -401,10 +430,6 @@ class DownloadService : Service() {
         } finally {
             closeConnection(probe)
         }
-        if (totalFromRange != null && totalFromRange >= SEGMENT_THRESHOLD_BYTES) {
-            return downloadDirectSegmented(task, url, root, target, partial, totalFromRange)
-        }
-        return downloadDirectSingle(task, url, target, partial)
     }
 
     private fun downloadDirectSingle(task: DownloadTask, url: String, target: File, partial: File): File {
@@ -428,7 +453,7 @@ class DownloadService : Service() {
         var expectedTotal = 0L
         try {
             val code = connection.responseCode
-            if (code !in 200..299) throw IOException("视频文件请求失败（$code）。")
+            DirectResponsePolicy.validate(code, connection.contentType)
             val contentRange = if (code == HttpURLConnection.HTTP_PARTIAL) {
                 ContentRangePolicy.parse(connection.getHeaderField("Content-Range"))
             } else null
@@ -539,9 +564,10 @@ class DownloadService : Service() {
                     var connection: HttpURLConnection? = null
                     try {
                         connection = openDownloadConnection(task, url, "bytes=${start + existing}-$end")
-                        if (connection.responseCode != HttpURLConnection.HTTP_PARTIAL) {
-                            throw IOException("服务器没有接受分段下载请求。")
-                        }
+                        val status = connection.responseCode
+                        DirectResponsePolicy.validate(status, connection.contentType)
+                        if (status == HttpURLConnection.HTTP_OK) throw RangeUnsupportedException()
+                        if (status != HttpURLConnection.HTTP_PARTIAL) throw IOException("服务器返回了无效的分段响应。")
                         val requestedStart = start + existing
                         val header = connection.getHeaderField("Content-Range")
                         if (!ContentRangePolicy.matches(header, requestedStart, end, totalBytes)) {
@@ -583,6 +609,8 @@ class DownloadService : Service() {
         try {
             while (futures.any { !it.isDone }) {
                 ensureTransferAllowed()
+                // Observe a failed worker now, not after every other range times out.
+                futures.filter { it.isDone }.forEach { it.get() }
                 Thread.sleep(350L)
                 val now = System.currentTimeMillis()
                 val currentBytes = downloaded.get()
@@ -603,8 +631,10 @@ class DownloadService : Service() {
             }
             futures.forEach { it.get() }
         } finally {
+            futures.filterNot { it.isDone }.forEach { it.cancel(true) }
             pool.shutdownNow()
-            pool.awaitTermination(2, TimeUnit.SECONDS)
+            activeConnections.forEach { runCatching(it::disconnect) }
+            check(pool.awaitTermination(10, TimeUnit.SECONDS)) { "分段连接尚未退出，请稍后继续任务。" }
         }
         FileOutputStream(partial, false).buffered(1024 * 1024).use { output ->
             segmentFiles.forEach { segment -> segment.inputStream().buffered(1024 * 1024).use { it.copyTo(output, 1024 * 1024) } }
@@ -626,8 +656,8 @@ class DownloadService : Service() {
     private fun openDownloadConnection(task: DownloadTask, url: String, range: String?): HttpURLConnection {
         val connection = URI(url).toURL().openConnection() as HttpURLConnection
         connection.instanceFollowRedirects = true
-        connection.connectTimeout = 30_000
-        connection.readTimeout = 60_000
+        connection.connectTimeout = 12_000
+        connection.readTimeout = 20_000
         connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124.0 Mobile Safari/537.36")
         connection.setRequestProperty("Accept-Encoding", "identity")
         when (task.platform) {
@@ -636,12 +666,13 @@ class DownloadService : Service() {
             "哔哩哔哩" -> connection.setRequestProperty("Referer", "https://www.bilibili.com/")
         }
         range?.let { connection.setRequestProperty("Range", it) }
+        activeConnections.add(connection)
         return try {
+            ensureTransferAllowed()
             connection.connect()
-            activeConnections.add(connection)
             connection
         } catch (error: Throwable) {
-            connection.disconnect()
+            closeConnection(connection)
             throw error
         }
     }
@@ -700,6 +731,7 @@ class DownloadService : Service() {
     }
 
     private fun ensureTransferAllowed() {
+        if (Thread.currentThread().isInterrupted) throw IOException("download worker interrupted")
         if (stopMode.isNotBlank()) throw IOException("download stopped")
         if (!requireWifiForCurrent) return
         val now = System.currentTimeMillis()

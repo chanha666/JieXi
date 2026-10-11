@@ -8,16 +8,19 @@ import java.io.File
 import java.nio.file.Files
 import java.util.UUID
 import java.util.prefs.Preferences
+import kotlinx.coroutines.*
 
 class DesktopAppControllerTest {
     @Test
     fun `update installation refuses active tasks and revalidates downloaded bytes`() {
         val temp = Files.createTempDirectory("jiexi-install-flow-test").toFile()
         val prefs = Preferences.userRoot().node("com/yunx/test/" + UUID.randomUUID())
+        val testScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         try {
             val controller = DesktopAppController(
                 credentialStore = CredentialStore(prefs.node("credentials")), settings = DesktopSettings(prefs.node("settings")),
-                stateStore = DesktopStateStore(File(temp, "state.bin")), mediaStoreFile = File(temp, "media.json"))
+                stateStore = DesktopStateStore(File(temp, "state.bin")), mediaStoreFile = File(temp, "media.json"),
+                scope = testScope)
             val file = File(temp, "setup.exe").apply { writeText("verified test payload") }
             val hash = java.security.MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it) }
             val asset = com.yunx.desktop.update.DesktopUpdateAsset(file.name, "https://example.invalid/setup.exe", hash)
@@ -37,6 +40,7 @@ class DesktopAppControllerTest {
             file.writeText("tampered")
             assertTrue(!com.yunx.desktop.update.DesktopUpdateService.verifiedFile(asset, file))
         } finally {
+            runBlocking { testScope.coroutineContext[Job]!!.cancelAndJoin() }
             prefs.removeNode()
             temp.deleteRecursively()
         }
@@ -46,14 +50,22 @@ class DesktopAppControllerTest {
     fun `removes a download task from the visible list`() {
         val temp = Files.createTempDirectory("jiexi-controller-test").toFile()
         val prefs = Preferences.userRoot().node("com/yunx/test/" + UUID.randomUUID())
-        val controller = DesktopAppController(
-            credentialStore = CredentialStore(prefs.node("credentials")), settings = DesktopSettings(prefs.node("settings")),
-            stateStore = DesktopStateStore(File(temp,"state.bin")), mediaStoreFile = File(temp,"media.json"))
-        val task = DesktopDownloadTask("sample.bin")
-        controller.downloads += task
+        val testScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        try {
+            val controller = DesktopAppController(
+                credentialStore = CredentialStore(prefs.node("credentials")), settings = DesktopSettings(prefs.node("settings")),
+                stateStore = DesktopStateStore(File(temp,"state.bin")), mediaStoreFile = File(temp,"media.json"),
+                scope = testScope)
+            val task = DesktopDownloadTask("sample.bin")
+            controller.downloads += task
 
-        controller.removeDownload(task)
+            controller.removeDownload(task)
 
-        assertTrue(controller.downloads.isEmpty())
+            assertTrue(controller.downloads.isEmpty())
+        } finally {
+            runBlocking { testScope.coroutineContext[Job]!!.cancelAndJoin() }
+            prefs.removeNode()
+            temp.deleteRecursively()
+        }
     }
 }

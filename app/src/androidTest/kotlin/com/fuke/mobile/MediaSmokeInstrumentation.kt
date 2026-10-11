@@ -52,6 +52,9 @@ class MediaSmokeInstrumentation : Instrumentation() {
             check(actual.readBytes().contentEquals(sample)) { "Downloaded bytes differ" }
             check(progress.get() > 0) { "No progress callbacks" }
             results.putString("download", "PASS: ${actual.length()} bytes, ${progress.get()} callbacks")
+            if (arguments.getString("service") == "1") {
+                results.putString("service", MediaServiceSmoke.run(this))
+            }
             if (arguments.getString("public") == "1") {
                 val preview = DouyinFallback.analyze("https://www.douyin.com/video/7646342441319408036")
                 check(preview.downloadUrl.startsWith("https://"))

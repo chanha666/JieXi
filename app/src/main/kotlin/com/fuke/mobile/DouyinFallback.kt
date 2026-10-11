@@ -100,13 +100,20 @@ object DouyinFallback {
             ?.obj("videoData")
             ?.obj("result")
             ?: error("抖音精选公开页的视频资料不完整。")
-        val modelJson = result.text("video_model")
-        val model = runCatching { JsonParser.parseString(modelJson).asJsonObject }
+        val model = runCatching {
+            val raw = result.get("video_model")
+            if (raw.isJsonObject) raw.asJsonObject else JsonParser.parseString(raw.asString).asJsonObject
+        }
             .getOrElse { error("抖音精选公开页的视频流资料无效。") }
-        val candidates = model.array("video_list")
-            ?.mapNotNull { element -> element.takeIf(JsonElement::isJsonObject)?.asJsonObject }
-            .orEmpty()
-            .filter { it.text("main_url").isNotBlank() }
+        val rawList = model.get("video_list")
+        val entries = when {
+            rawList == null -> emptyList()
+            rawList.isJsonArray -> rawList.asJsonArray.toList()
+            rawList.isJsonObject -> rawList.asJsonObject.entrySet().map { it.value }
+            else -> emptyList()
+        }
+        val candidates = entries.mapNotNull { it.takeIf(JsonElement::isJsonObject)?.asJsonObject }
+            .filter { candidateUrl(it).isNotBlank() }
         if (candidates.isEmpty()) error("这个抖音链接没有公开可下载的视频。")
 
         val h264 = candidates.filter { it.obj("video_meta")?.text("codec_type").equals("h264", true) }
@@ -116,7 +123,7 @@ object DouyinFallback {
                 .thenBy { it.obj("video_meta")?.long("bitrate") ?: 0L }
         ) ?: error("抖音精选公开页没有可用的视频流。")
         val meta = best.obj("video_meta")
-        val downloadUrl = best.text("main_url")
+        val downloadUrl = candidateUrl(best)
         val definition = meta?.text("definition").orEmpty()
         val codec = meta?.text("codec_type").orEmpty().uppercase()
         val qualityLabel = listOf(definition, codec).filter(String::isNotBlank).joinToString(" · ")
@@ -148,6 +155,14 @@ object DouyinFallback {
         )
         return patterns.firstNotNullOfOrNull { pattern -> pattern.find(value)?.groupValues?.getOrNull(1) }
     }
+
+    private fun candidateUrl(value: JsonObject): String =
+        listOf(value.text("main_url"), value.text("backup_url")).firstOrNull { raw ->
+            runCatching {
+                val uri = URI(raw)
+                uri.scheme?.lowercase() in setOf("https", "http") && !uri.host.isNullOrBlank()
+            }.getOrDefault(false)
+        }.orEmpty()
 
     private fun fetch(startUrl: String, cookies: MutableMap<String, String>): FetchedPage {
         var current = startUrl

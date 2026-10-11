@@ -47,6 +47,26 @@ class DouyinFallbackTest {
         assertEquals("7646342441319408036", DouyinFallback.extractVideoId("https://jingxuan.douyin.com/m/video/7646342441319408036"))
     }
 
+    @Test fun `featured page accepts object model and keyed video list with backup only`() {
+        val rendition = rendition("", "1080p", 1080, 4_000_000, "h264", 5000).apply {
+            addProperty("main_url", "javascript:invalid")
+            addProperty("backup_url", "https://cdn.example/backup.mp4")
+        }
+        val html = featuredHtml(rendition)
+        val root = com.google.gson.JsonParser.parseString(
+            html.substringAfter("window._SSR_DATA = ").substringBefore("</script>")
+        ).asJsonObject
+        val result = root.getAsJsonObject("data").getAsJsonObject("storeState")
+            .getAsJsonObject("detail").getAsJsonObject("videoData").getAsJsonObject("result")
+        val model = com.google.gson.JsonParser.parseString(result.get("video_model").asString).asJsonObject
+        model.add("video_list", JsonObject().apply { add("video_1", rendition) })
+        result.add("video_model", model)
+        val preview = DouyinFallback.parseFeaturedPage("https://www.douyin.com/video/7646342441319408036",
+            "<script>window._SSR_DATA = $root;</script>")
+        assertEquals("https://cdn.example/backup.mp4", preview.downloadUrl)
+        assertEquals(5000L, preview.formats.first().bytes)
+    }
+
     private fun rendition(
         url: String,
         definition: String,
