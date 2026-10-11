@@ -20,6 +20,8 @@
 
 ## 发布门禁
 
+最终门禁结果：sharedCore 20/20 通过，Android JVM 83/83 通过；Windows 共 112 项，105 通过、7 项显式跳过、0 失败。两项公开网络测试已另外显式开启并通过。Android lint 为 0 错误、96 警告、18 提示。发行 APK 的 v2/v3 签名通过，安装器 MSI 升级数据保护审核通过。使用应用内公钥验证在线更新清单签名及三个发布文件哈希通过；不等于已在 UI 中完成在线更新安装。
+
 发布脚本必须依次通过 sharedCore:test、app:testDebugUnitTest、app:lintDebug、app:verifyAndroidRelease、desktopApp:test、desktopApp:packageInstaller 和安装器 MSI 审核。在线网络测试需显式设置 JIEXI_PUBLIC_MEDIA_TEST=1；默认发布门禁会跳过这些测试，真实网络结果单独以上述记录为准。
 
 ## 未验证范围
